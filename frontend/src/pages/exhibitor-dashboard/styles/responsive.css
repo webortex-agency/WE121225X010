@@ -1,0 +1,418 @@
+/* Exhibitor Dashboard Responsive Styles */
+
+/* Mobile First Approach */
+@media (max-width: 768px) {
+  /* Main Dashboard Layout */
+  .exhibitor-dashboard {
+    flex-direction: column;
+    height: auto;
+    padding-top: 8px;
+  }
+
+  /* Movie List Sidebar - Convert to horizontal scroll on mobile */
+  .tour-movie-sidebar {
+    width: 100%;
+    max-height: 180px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    order: 2;
+  }
+
+  .tour-movie-sidebar .movie-list {
+    display: flex;
+    overflow-x: auto;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .tour-movie-sidebar .movie-card {
+    min-width: 180px;
+    flex-shrink: 0;
+  }
+
+  /* Scheduling Grid - Horizontal scroll for new layout */
+  .tour-schedule-grid {
+    padding: 12px;
+    order: 1;
+  }
+
+  .schedule-grid-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* New grid layout - days vertical, shows horizontal (6 shows max) */
+  .grid-cols-\[200px_repeat\(6\,1fr\)\] {
+    grid-template-columns: 150px repeat(6, minmax(120px, 1fr));
+  }
+
+  /* Sticky column adjustments for mobile */
+  .sticky {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+  }
+
+  /* Show cells minimum width for mobile */
+  .min-w-\[150px\] {
+    min-width: 120px;
+  }
+
+  /* Day column adjustments */
+  .grid-cols-\[200px_repeat\(6\,1fr\)\] > div:first-child {
+    min-width: 150px;
+  }
+
+  /* Week Navigation - Stack buttons */
+  .tour-week-navigation .navigation-controls {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .tour-week-navigation .navigation-buttons {
+    display: flex;
+    gap: 8px;
+  }
+
+  /* Schedule Summary - Full width */
+  .tour-schedule-summary {
+    width: 100%;
+    margin-top: 16px;
+  }
+
+  .schedule-summary-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Show Details Panel - Full screen on mobile */
+  .show-details-panel {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
+
+  .show-details-content {
+    padding: 16px;
+  }
+
+  /* Collections Page */
+  .collections-stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .collections-bulk-submit {
+    padding: 12px;
+  }
+
+  .collections-show-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  /* Navigation overlap fixes */
+  .container {
+    padding-top: 24px !important;
+  }
+
+  /* Page headers responsive */
+  .page-header h1 {
+    font-size: 1.5rem !important;
+  }
+
+  .page-header p {
+    font-size: 0.875rem !important;
+  }
+
+  /* Button responsive adjustments */
+  .btn-responsive {
+    padding: 8px 12px;
+    font-size: 0.875rem;
+  }
+
+  /* Grid responsive for stats cards */
+  .stats-grid-mobile {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px;
+  }
+
+  /* Ledger Page */
+  .ledger-summary-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .ledger-filters {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .ledger-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ledger-table {
+    min-width: 800px;
+  }
+
+  /* Profile Page */
+  .profile-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .profile-sidebar {
+    order: 2;
+  }
+
+  .profile-content {
+    order: 1;
+  }
+
+  .profile-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Terms & Conditions Modal */
+  .terms-modal {
+    margin: 16px;
+    max-height: calc(100vh - 32px);
+  }
+
+  .terms-content {
+    padding: 16px;
+  }
+
+  /* Dashboard Tour - Adjust positioning */
+  .joyride-tooltip {
+    max-width: calc(100vw - 32px);
+  }
+}
+
+/* Tablet Styles */
+@media (min-width: 769px) and (max-width: 1024px) {
+  /* Movie List Sidebar - Narrower on tablet */
+  .tour-movie-sidebar {
+    width: 280px;
+  }
+
+  /* Schedule Grid - Adjust for tablet */
+  .schedule-grid-container {
+    overflow-x: auto;
+  }
+
+  /* Schedule Summary - Adjust width */
+  .tour-schedule-summary {
+    width: 300px;
+  }
+
+  /* Collections Page */
+  .collections-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Ledger Page */
+  .ledger-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Profile Page */
+  .profile-form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Desktop Styles */
+@media (min-width: 1025px) {
+  /* Default desktop layout - already handled in components */
+  
+  /* Large Desktop Optimizations */
+  @media (min-width: 1440px) {
+    .container {
+      max-width: 1400px;
+    }
+
+    .tour-movie-sidebar {
+      width: 320px;
+    }
+
+    .tour-schedule-summary {
+      width: 320px;
+    }
+  }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Increase touch targets */
+  .movie-card,
+  .schedule-cell,
+  .nav-button,
+  .action-button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Improve drag and drop for touch */
+  .draggable-movie {
+    touch-action: none;
+    user-select: none;
+  }
+
+  /* Better hover states for touch */
+  .hover-effect:hover {
+    transform: none;
+  }
+
+  .hover-effect:active {
+    transform: scale(0.98);
+    opacity: 0.8;
+  }
+}
+
+/* High DPI Display Optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  /* Ensure crisp icons and images */
+  .icon,
+  .movie-poster {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Reduced Motion Preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Disable tour animations */
+  .joyride-tooltip {
+    animation: none !important;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f172a;
+    --foreground: #f1f5f9;
+    --card: #1e293b;
+    --card-foreground: #f1f5f9;
+    --muted: #334155;
+    --muted-foreground: #94a3b8;
+    --border: #334155;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .tour-movie-sidebar,
+  .navigation,
+  .action-buttons,
+  .tour-controls {
+    display: none !important;
+  }
+
+  .schedule-grid,
+  .ledger-table,
+  .collections-list {
+    break-inside: avoid;
+  }
+
+  .page-break {
+    page-break-before: always;
+  }
+}
+
+/* Utility Classes for Responsive Design */
+.mobile-only {
+  display: none;
+}
+
+.desktop-only {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .mobile-only {
+    display: block;
+  }
+
+  .desktop-only {
+    display: none;
+  }
+
+  .mobile-stack {
+    flex-direction: column !important;
+  }
+
+  .mobile-full-width {
+    width: 100% !important;
+  }
+
+  .mobile-center {
+    text-align: center !important;
+  }
+}
+
+/* Accessibility Improvements */
+@media (prefers-contrast: high) {
+  .border {
+    border-width: 2px;
+  }
+
+  .text-muted-foreground {
+    color: var(--foreground);
+  }
+}
+
+/* Focus Visible for Keyboard Navigation */
+.focus-visible:focus-visible {
+  outline: 2px solid #0d9488;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Loading States */
+.loading-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Smooth Scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Container Queries Support (Future Enhancement) */
+@supports (container-type: inline-size) {
+  .schedule-container {
+    container-type: inline-size;
+  }
+
+  @container (max-width: 600px) {
+    .schedule-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+}
