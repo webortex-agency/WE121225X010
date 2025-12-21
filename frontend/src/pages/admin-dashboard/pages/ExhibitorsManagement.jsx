@@ -136,7 +136,7 @@ const ExhibitorsManagement = () => {
   return (
     <div className="min-h-screen bg-background">
       <RoleBasedNavigation userRole="admin" />
-      <QuickActionToolbar userRole="admin" />
+      {/* <QuickActionToolbar userRole="admin" /> */}
       
       <div className="main-content with-toolbar">
         <div className="content-container">
