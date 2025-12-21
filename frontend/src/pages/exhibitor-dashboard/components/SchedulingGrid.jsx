@@ -158,6 +158,7 @@ const SchedulingGrid = ({ onShowClick }) => {
       {/* Schedule Grid - Days Vertical, Shows Horizontal */}
       <div className="p-4">
         <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="overflow-x-auto max-w-full">
           {/* Header Row - Show Times */}
           <div className="grid grid-cols-[200px_repeat(6,1fr)] lg:grid-cols-[200px_repeat(6,1fr)] md:grid-cols-[180px_repeat(6,minmax(140px,1fr))] sm:grid-cols-[150px_repeat(6,minmax(120px,1fr))] bg-muted/30 overflow-x-auto">
             <div className="p-3 border-r border-border font-medium text-foreground sticky left-0 bg-muted/30 z-10">
@@ -243,6 +244,7 @@ const SchedulingGrid = ({ onShowClick }) => {
               </div>
             );
           })}
+          </div>
         </div>
 
         {/* Drag & Drop Hint */}

@@ -47,7 +47,7 @@ const ScheduleSummary = () => {
   ];
 
   return (
-    <div className="bg-card border border-border rounded-lg p-6 tour-schedule-summary">
+    <div className="bg-card border border-border rounded-lg p-6 tour-schedule-summary w-full">
       <div className="flex items-center gap-3 mb-4">
         <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center">
           <Icon name="BarChart3" size={20} className="text-white" />
@@ -60,7 +60,7 @@ const ScheduleSummary = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <div key={index} className="bg-muted/30 rounded-lg p-3">
             <div className="flex items-center gap-2 mb-2">

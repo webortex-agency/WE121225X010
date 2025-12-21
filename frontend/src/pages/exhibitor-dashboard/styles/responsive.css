@@ -6,7 +6,7 @@
   .exhibitor-dashboard {
     flex-direction: column;
     height: auto;
-    padding-top: 8px;
+    padding-top: 16px;
   }
 
   /* Movie List Sidebar - Convert to horizontal scroll on mobile */
@@ -15,7 +15,7 @@
     max-height: 180px;
     border-right: none;
     border-bottom: 1px solid var(--border);
-    order: 2;
+    order: 1;
   }
 
   .tour-movie-sidebar .movie-list {
@@ -33,17 +33,29 @@
   /* Scheduling Grid - Horizontal scroll for new layout */
   .tour-schedule-grid {
     padding: 12px;
-    order: 1;
+    order: 2;
+    width: 100%;
+    overflow-x: hidden;
   }
 
   .schedule-grid-container {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    max-width: 100vw;
   }
 
   /* New grid layout - days vertical, shows horizontal (6 shows max) */
   .grid-cols-\[200px_repeat\(6\,1fr\)\] {
-    grid-template-columns: 150px repeat(6, minmax(120px, 1fr));
+    grid-template-columns: 120px repeat(6, minmax(100px, 1fr));
+    width: max-content;
+    min-width: 100%;
+  }
+
+  /* Prevent horizontal overflow */
+  .exhibitor-dashboard,
+  .exhibitor-dashboard * {
+    max-width: 100vw;
+    box-sizing: border-box;
   }
 
   /* Sticky column adjustments for mobile */
@@ -117,6 +129,11 @@
     padding-top: 24px !important;
   }
 
+  /* Dashboard specific navigation fix */
+  .exhibitor-dashboard {
+    margin-top: 20px !important;
+  }
+
   /* Page headers responsive */
   .page-header h1 {
     font-size: 1.5rem !important;
@@ -124,6 +141,12 @@
 
   .page-header p {
     font-size: 0.875rem !important;
+  }
+
+  /* Weekly Summary Section */
+  .weekly-summary-section {
+    margin-top: 0;
+    padding: 16px 0;
   }
 
   /* Button responsive adjustments */

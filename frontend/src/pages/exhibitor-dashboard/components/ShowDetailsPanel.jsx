@@ -112,7 +112,7 @@ const ShowDetailsPanel = ({ isOpen, onClose, showDetails }) => {
       {/* Panel */}
       <div className={`
         fixed right-0 top-0 h-full w-96 bg-card border-l border-border shadow-2xl z-50
-        transform transition-transform duration-300 ease-in-out
+        transform transition-transform duration-300 ease-in-out mt-16
         ${isOpen ? 'translate-x-0' : 'translate-x-full'}
       `}>
         <div className="flex flex-col h-full">
@@ -281,7 +281,7 @@ const ShowDetailsPanel = ({ isOpen, onClose, showDetails }) => {
               )}
 
               {/* Notes */}
-              <div className="space-y-4">
+              {/* <div className="space-y-4">
                 <h3 className="font-medium text-foreground flex items-center gap-2">
                   <Icon name="FileText" size={16} className="text-teal-600" />
                   Additional Notes
@@ -295,7 +295,7 @@ const ShowDetailsPanel = ({ isOpen, onClose, showDetails }) => {
                     {...register('notes')}
                   />
                 </div>
-              </div>
+              </div> */}
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4">

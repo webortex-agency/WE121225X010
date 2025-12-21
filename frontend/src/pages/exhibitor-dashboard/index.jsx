@@ -125,7 +125,7 @@ const ExhibitorDashboard = () => {
       <RoleBasedNavigation userRole="exhibitor" />
 
       {/* Main Content */}
-      <div className="exhibitor-dashboard flex flex-col lg:flex-row min-h-[calc(100vh-80px)] pt-8"> {/* Changed to flex-col with more padding */}
+      <div className="exhibitor-dashboard flex flex-col lg:flex-row min-h-[calc(100vh-80px)] my-10 pt-8"> {/* Changed to flex-col with more padding */}
         {/* Left Sidebar - Movie List */}
         <MovieListSidebar />
 
@@ -176,19 +176,27 @@ const ExhibitorDashboard = () => {
             </div>
           </div>
 
-          {/* Content Grid */}
-          <div className="flex-1 flex flex-col lg:flex-row">
-            {/* Scheduling Grid */}
+          {/* Scheduling Grid - Full Width */}
+          <div className="flex-1 w-full">
             <SchedulingGrid onShowClick={handleShowClick} />
+          </div>
+        </div>
+      </div>
 
-            {/* Right Sidebar - Summary */}
-            <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-border p-4 bg-muted/10 order-first lg:order-last">
+      {/* Weekly Summary Section - Separate Section Below */}
+      <div className="bg-muted/10 border-t border-border container mx-auto px-6 py-6 justify-center justify-items-center text-center">
+        <div className="container mx-auto px-6 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Weekly Summary */}
+            <div className="lg:col-span-2 xl:col-span-2 w-full justify-center justify-items-center text-center">
               <ScheduleSummary />
-              
-              {/* Additional Quick Actions - Hidden on mobile, shown in separate section */}
-              <div className="hidden lg:block mt-6 space-y-3">
-                <h3 className="font-medium text-foreground">Quick Links</h3>
-                <div className="space-y-2">
+            </div>
+            
+            {/* Quick Actions */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-medium text-foreground mb-3">Quick Links</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-2">
                   <Button
                     variant="outline"
                     size="sm"
@@ -222,12 +230,12 @@ const ExhibitorDashboard = () => {
               </div>
 
               {/* Help Section */}
-              <div className="mt-4 lg:mt-6 p-3 lg:p-4 bg-teal-50 border border-teal-200 rounded-lg">
+              <div className="p-4 bg-teal-50 border border-teal-200 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <Icon name="HelpCircle" size={16} className="text-teal-600" />
                   <h4 className="font-medium text-teal-800">Need Help?</h4>
                 </div>
-                <p className="text-xs lg:text-sm text-teal-700 mb-3">
+                <p className="text-sm text-teal-700 mb-3">
                   New to the dashboard? Take a quick tour to learn the features.
                 </p>
                 <Button
@@ -242,43 +250,44 @@ const ExhibitorDashboard = () => {
               </div>
             </div>
           </div>
-
-          {/* Mobile Quick Actions Bar */}
-          <div className="lg:hidden bg-card border-t border-border p-4">
-            <div className="grid grid-cols-3 gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex flex-col items-center gap-1 h-auto py-2"
-                onClick={() => window.location.href = '/exhibitor/collections'}
-              >
-                <Icon name="FileText" size={16} />
-                <span className="text-xs">Collections</span>
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex flex-col items-center gap-1 h-auto py-2"
-                onClick={() => window.location.href = '/exhibitor/ledger'}
-              >
-                <Icon name="BookOpen" size={16} />
-                <span className="text-xs">Ledger</span>
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex flex-col items-center gap-1 h-auto py-2"
-                onClick={() => window.location.href = '/exhibitor/profile'}
-              >
-                <Icon name="Settings" size={16} />
-                <span className="text-xs">Profile</span>
-              </Button>
-            </div>
-          </div>
         </div>
       </div>
+
+      {/* Mobile Quick Actions Bar - Keep for mobile */}
+      <div className="lg:hidden bg-card border-t border-border p-4">
+        <div className="grid grid-cols-3 gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex flex-col items-center gap-1 h-auto py-2"
+            onClick={() => window.location.href = '/exhibitor/collections'}
+          >
+            <Icon name="FileText" size={16} />
+            <span className="text-xs">Collections</span>
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex flex-col items-center gap-1 h-auto py-2"
+            onClick={() => window.location.href = '/exhibitor/ledger'}
+          >
+            <Icon name="BookOpen" size={16} />
+            <span className="text-xs">Ledger</span>
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex flex-col items-center gap-1 h-auto py-2"
+            onClick={() => window.location.href = '/exhibitor/profile'}
+          >
+            <Icon name="Settings" size={16} />
+            <span className="text-xs">Profile</span>
+          </Button>
+        </div>
+      </div>
+
 
       {/* Modals and Overlays */}
       <TermsAndConditionsModal
