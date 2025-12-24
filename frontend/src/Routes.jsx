@@ -15,9 +15,11 @@ import ExhibitorDetailsPage from "./pages/admin-dashboard/pages/ExhibitorDetails
 import AnalyticsPage from "./pages/admin-dashboard/pages/AnalyticsPage";
 // Exhibitor Dashboard imports
 import ExhibitorDashboard from "./pages/exhibitor-dashboard";
+import ExhibitorHome from "./pages/exhibitor-dashboard/pages/ExhibitorHome";
 import ExhibitorCollectionsPage from "./pages/exhibitor-dashboard/pages/CollectionsPage";
 import ExhibitorLedgerPage from "./pages/exhibitor-dashboard/pages/LedgerPage";
 import ExhibitorProfilePage from "./pages/exhibitor-dashboard/pages/ProfilePage";
+import MovieDetailsPage from "./pages/exhibitor-dashboard/pages/MovieDetailsPage";
 
 const Routes = () => {
   return (
@@ -33,26 +35,28 @@ const Routes = () => {
               path="/closing-statement-generation"
               element={<ClosingStatementGeneration />}
             />
-            
+
             {/* Admin Routes */}
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
             <Route path="/admin/movies" element={<MoviesManagement />} />
             <Route path="/admin/exhibitors" element={<ExhibitorsManagement />} />
             <Route path="/admin/exhibitors/:exhibitor_id" element={<ExhibitorDetailsPage />} />
             <Route path="/admin/analytics" element={<AnalyticsPage />} />
-            
+
             {/* Movie Manager Routes */}
             <Route
               path="/movie-manager-dashboard/:movie_id?"
               element={<MovieManagerDashboard />}
             />
-            
+
             {/* Exhibitor Dashboard Routes */}
+            <Route path="/exhibitor/home" element={<ExhibitorHome />} />
             <Route path="/exhibitor/dashboard" element={<ExhibitorDashboard />} />
+            <Route path="/exhibitor/movie/:movieId" element={<MovieDetailsPage />} />
             <Route path="/exhibitor/collections" element={<ExhibitorCollectionsPage />} />
             <Route path="/exhibitor/ledger" element={<ExhibitorLedgerPage />} />
             <Route path="/exhibitor/profile" element={<ExhibitorProfilePage />} />
-            
+
             {/* Legacy Exhibitor Portal Route (redirect to new dashboard) */}
             <Route path="/exhibitor-portal" element={<ExhibitorDashboard />} />
           </Route>

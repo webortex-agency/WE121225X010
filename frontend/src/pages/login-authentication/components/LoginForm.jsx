@@ -90,7 +90,7 @@ const LoginForm = ({ role, onBack }) => {
           navigate(`/movie-manager-dashboard/${res.user.assigned_movie_id}`);
           break;
         case 'exhibitor':
-          navigate('/exhibitor-portal');
+          navigate('/exhibitor/home');
           break;
         default:
           navigate('/');

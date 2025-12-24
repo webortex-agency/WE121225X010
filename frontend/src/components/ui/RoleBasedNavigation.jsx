@@ -23,6 +23,7 @@ const RoleBasedNavigation = ({ userRole = 'admin' }) => {
       { path: '/movie-manager-dashboard', label: 'Dashboard', icon: 'Film' },
     ],
     exhibitor: [
+      { path: '/exhibitor/home', label: 'Home', icon: 'Home' },
       { path: '/exhibitor/dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
       { path: '/exhibitor/collections', label: 'Collections', icon: 'FileText' },
       { path: '/exhibitor/ledger', label: 'Ledger', icon: 'BookOpen' },
@@ -30,7 +31,7 @@ const RoleBasedNavigation = ({ userRole = 'admin' }) => {
     ],
   };
 
-  const menuItems = navigationConfig?.[userRole] || navigationConfig?.admin; 
+  const menuItems = navigationConfig?.[userRole] || navigationConfig?.admin;
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
