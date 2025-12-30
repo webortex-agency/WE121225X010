@@ -24,8 +24,6 @@ const RoleBasedNavigation = ({ userRole = 'admin' }) => {
     ],
     exhibitor: [
       { path: '/exhibitor/home', label: 'Home', icon: 'Home' },
-      { path: '/exhibitor/dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
-      { path: '/exhibitor/collections', label: 'Collections', icon: 'FileText' },
       { path: '/exhibitor/ledger', label: 'Ledger', icon: 'BookOpen' },
       { path: '/exhibitor/profile', label: 'Profile', icon: 'Settings' },
     ],

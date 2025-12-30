@@ -165,7 +165,7 @@ const MovieDetailsPage = () => {
                                     <Button
                                         variant="outline"
                                         iconName="payments"
-                                        onClick={() => setIsCollectionsModalOpen(true)}
+                                        onClick={() => navigate(`/exhibitor/dashboard/${movieId}`)}
                                     >
                                         Submit Collections
                                     </Button>

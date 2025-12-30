@@ -1,15 +1,15 @@
 import { useState, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { 
-  selectFilteredMovies, 
-  selectSearchFilter, 
+import {
+  selectFilteredMovies,
+  selectSearchFilter,
   setSearchFilter,
-  selectMoviesLoading 
+  selectMoviesLoading
 } from '../../../store/exhibitorMoviesSlice';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const MovieListSidebar = () => {
+const MovieListSidebar = ({ movieId }) => {
   const dispatch = useDispatch();
   const movies = useSelector(selectFilteredMovies);
   const searchFilter = useSelector(selectSearchFilter);
@@ -24,7 +24,7 @@ const MovieListSidebar = () => {
     setDraggedMovie(movie);
     e.dataTransfer.setData('application/json', JSON.stringify(movie));
     e.dataTransfer.effectAllowed = 'copy';
-    
+
     // Add visual feedback
     e.target.style.opacity = '0.5';
   };
@@ -34,15 +34,17 @@ const MovieListSidebar = () => {
     setDraggedMovie(null);
   };
 
-  const activeMovies = useMemo(() => 
-    movies.filter(movie => movie.status === 'active'), 
-    [movies]
-  );
+  const activeMovies = useMemo(() => {
+    const filtered = movies.filter(movie => movie.status === 'active');
+    // If movieId is provided, filter to show only that movie
+    return movieId ? filtered.filter(movie => movie.id === movieId) : filtered;
+  }, [movies, movieId]);
 
-  const upcomingMovies = useMemo(() => 
-    movies.filter(movie => movie.status === 'upcoming'), 
-    [movies]
-  );
+  const upcomingMovies = useMemo(() => {
+    const filtered = movies.filter(movie => movie.status === 'upcoming');
+    // If movieId is provided, filter to show only that movie
+    return movieId ? filtered.filter(movie => movie.id === movieId) : filtered;
+  }, [movies, movieId]);
 
   if (loading) {
     return (
@@ -98,9 +100,9 @@ const MovieListSidebar = () => {
             </div>
             <div className="space-y-2">
               {activeMovies.map((movie) => (
-                <MovieCard 
-                  key={movie.id} 
-                  movie={movie} 
+                <MovieCard
+                  key={movie.id}
+                  movie={movie}
                   onDragStart={handleDragStart}
                   onDragEnd={handleDragEnd}
                   isDragging={draggedMovie?.id === movie.id}
@@ -119,9 +121,9 @@ const MovieListSidebar = () => {
             </div>
             <div className="space-y-2">
               {upcomingMovies.map((movie) => (
-                <MovieCard 
-                  key={movie.id} 
-                  movie={movie} 
+                <MovieCard
+                  key={movie.id}
+                  movie={movie}
                   onDragStart={handleDragStart}
                   onDragEnd={handleDragEnd}
                   isDragging={draggedMovie?.id === movie.id}
@@ -210,8 +212,8 @@ const MovieCard = ({ movie, onDragStart, onDragEnd, isDragging, disabled = false
         {/* Movie Poster Placeholder */}
         <div className="w-12 h-16 bg-muted rounded flex items-center justify-center flex-shrink-0">
           {movie.posterUrl ? (
-            <img 
-              src={movie.posterUrl} 
+            <img
+              src={movie.posterUrl}
               alt={movie.title}
               className="w-full h-full object-cover rounded"
             />
@@ -225,12 +227,12 @@ const MovieCard = ({ movie, onDragStart, onDragEnd, isDragging, disabled = false
           <h4 className="font-medium text-foreground text-sm truncate mb-1">
             {movie.title}
           </h4>
-          
+
           <div className="space-y-1">
             <div className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium border ${getGenreColor(movie.genre)}`}>
               {movie.genre}
             </div>
-            
+
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Icon name="Globe" size={12} />

@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Routes as RouterRoutes, Route } from "react-router-dom";
+import { BrowserRouter, Routes as RouterRoutes, Route, Navigate } from "react-router-dom";
 import ScrollToTop from "components/ScrollToTop";
 import ErrorBoundary from "components/ErrorBoundary";
 import NotFound from "pages/NotFound";
@@ -51,7 +51,7 @@ const Routes = () => {
 
             {/* Exhibitor Dashboard Routes */}
             <Route path="/exhibitor/home" element={<ExhibitorHome />} />
-            <Route path="/exhibitor/dashboard" element={<ExhibitorDashboard />} />
+            <Route path="/exhibitor/dashboard/:movieId" element={<ExhibitorDashboard />} />
             <Route path="/exhibitor/movie/:movieId" element={<MovieDetailsPage />} />
             <Route path="/exhibitor/collections" element={<ExhibitorCollectionsPage />} />
             <Route path="/exhibitor/ledger" element={<ExhibitorLedgerPage />} />

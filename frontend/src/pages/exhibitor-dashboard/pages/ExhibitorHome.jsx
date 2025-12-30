@@ -14,6 +14,7 @@ import {
     acceptAgreement,
 } from '../../../store/exhibitorHomeSlice';
 import { selectAssignedMovies } from '../../../store/exhibitorMoviesSlice';
+import { autoInitializeExhibitor } from '../../../utils/initializeExhibitorData';
 
 const ExhibitorHome = () => {
     const dispatch = useDispatch();
@@ -43,6 +44,9 @@ const ExhibitorHome = () => {
     const dashboardMovies = useSelector(selectAssignedMovies);
 
     useEffect(() => {
+        // Initialize exhibitor data (movies, schedule, etc.)
+        autoInitializeExhibitor();
+
         if (exhibitorId) {
             dispatch(fetchExhibitorAssignments(exhibitorId));
             dispatch(fetchExhibitorStats(exhibitorId));
