@@ -9,7 +9,7 @@ import { useForm } from 'react-hook-form';
 
 const ProfilePage = () => {
   const dispatch = useDispatch();
-    const userInfo = useSelector((state) => state.auth.userInfo);
+  const userInfo = useSelector((state) => state.auth.userInfo);
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
 
@@ -72,7 +72,7 @@ const ProfilePage = () => {
   return (
     <div className="min-h-screen bg-background">
       <RoleBasedNavigation userRole="exhibitor" />
-      
+
       <div className="container mx-auto px-6 py-8 pt-20">
         {/* Header */}
         <div className="mb-8">
@@ -98,8 +98,8 @@ const ProfilePage = () => {
                     onClick={() => setActiveTab(tab.id)}
                     className={`
                       w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors
-                      ${activeTab === tab.id 
-                        ? 'bg-teal-100 text-teal-700 border border-teal-200' 
+                      ${activeTab === tab.id
+                        ? 'bg-teal-100 text-teal-700 border border-teal-200'
                         : 'text-muted-foreground hover:bg-muted/20 hover:text-foreground'
                       }
                     `}
@@ -124,7 +124,7 @@ const ProfilePage = () => {
                   <Icon name="RotateCcw" size={16} className="mr-2" />
                   Reset Dashboard Tour
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -150,7 +150,7 @@ const ProfilePage = () => {
                       {tabs.find(t => t.id === activeTab)?.label}
                     </h2>
                   </div>
-                  
+
                   {activeTab !== 'preferences' && (
                     <div className="flex items-center gap-3">
                       {isEditing ? (
@@ -158,7 +158,7 @@ const ProfilePage = () => {
                           <Button variant="outline" onClick={handleCancelEdit}>
                             Cancel
                           </Button>
-                          <Button 
+                          <Button
                             onClick={handleSubmit(onSubmit)}
                             disabled={!isDirty}
                             className="bg-teal-600 hover:bg-teal-700"
@@ -181,32 +181,32 @@ const ProfilePage = () => {
               {/* Tab Content */}
               <div className="p-6">
                 {activeTab === 'profile' && (
-                  <ProfileTab 
+                  <ProfileTab
                     profileData={profileData}
                     isEditing={isEditing}
                     register={register}
                     errors={errors}
                   />
                 )}
-                
+
                 {activeTab === 'cinema' && (
-                  <CinemaTab 
+                  <CinemaTab
                     profileData={profileData}
                     isEditing={isEditing}
                     register={register}
                     errors={errors}
                   />
                 )}
-                
+
                 {activeTab === 'financial' && (
-                  <FinancialTab 
+                  <FinancialTab
                     profileData={profileData}
                     isEditing={isEditing}
                     register={register}
                     errors={errors}
                   />
                 )}
-                
+
                 {activeTab === 'preferences' && (
                   <PreferencesTab />
                 )}
@@ -241,7 +241,7 @@ const ProfileTab = ({ profileData, isEditing, register, errors }) => (
         {isEditing ? (
           <Input
             type="email"
-            {...register('email', { 
+            {...register('email', {
               required: 'Email is required',
               pattern: {
                 value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,

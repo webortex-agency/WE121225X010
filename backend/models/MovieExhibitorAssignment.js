@@ -26,6 +26,17 @@ const MovieExhibitorAssignmentSchema = new mongoose.Schema({
   notes: {
     type: String,
   },
+  agreement_accepted: {
+    type: Boolean,
+    default: false,
+  },
+  agreement_accepted_date: {
+    type: Date,
+  },
+  agreement_version: {
+    type: String,
+    default: 'v1.0',
+  },
 }, { timestamps: true });
 
 module.exports = mongoose.model('MovieExhibitorAssignment', MovieExhibitorAssignmentSchema);

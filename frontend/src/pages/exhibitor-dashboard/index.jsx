@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useParams, useNavigate } from 'react-router-dom';
 import './styles/responsive.css';
-import { 
+import {
   selectTermsAndConditionsAccepted,
   selectTourCompleted,
   setSelectedWeek,
@@ -9,6 +10,7 @@ import {
   loadSchedule,
   loadUserPreferences
 } from '../../store/exhibitorScheduleSlice';
+import { selectAssignedMovies } from '../../store/exhibitorMoviesSlice';
 import { autoInitializeExhibitor } from '../../utils/initializeExhibitorData';
 import RoleBasedNavigation from '../../components/ui/RoleBasedNavigation';
 import TermsAndConditionsModal from './components/TermsAndConditionsModal';
@@ -22,23 +24,29 @@ import Icon from '../../components/AppIcon';
 
 const ExhibitorDashboard = () => {
   const dispatch = useDispatch();
+  const { movieId } = useParams();
+  const navigate = useNavigate();
   const termsAccepted = useSelector(selectTermsAndConditionsAccepted);
   const tourCompleted = useSelector(selectTourCompleted);
-  
+
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showTour, setShowTour] = useState(false);
   const [selectedShow, setSelectedShow] = useState(null);
   const [showDetailsPanel, setShowDetailsPanel] = useState(false);
 
+  // Get movie data if movieId is provided
+  const assignedMovies = useSelector(selectAssignedMovies);
+  const selectedMovie = movieId ? assignedMovies.find(m => m.id === movieId) : null;
+
   // Initialize data and check onboarding status
   useEffect(() => {
     // Initialize exhibitor data
     autoInitializeExhibitor();
-    
+
     // Load user preferences and schedule
     dispatch(loadUserPreferences());
     dispatch(loadSchedule());
-    
+
     // Set current week if not set
     const currentWeek = getCurrentWeek();
     dispatch(setSelectedWeek(currentWeek));
@@ -127,7 +135,7 @@ const ExhibitorDashboard = () => {
       {/* Main Content */}
       <div className="exhibitor-dashboard flex flex-col lg:flex-row min-h-[calc(100vh-80px)] my-10 pt-8"> {/* Changed to flex-col with more padding */}
         {/* Left Sidebar - Movie List */}
-        <MovieListSidebar />
+        <MovieListSidebar movieId={movieId} />
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col">
@@ -135,10 +143,32 @@ const ExhibitorDashboard = () => {
           <div className="bg-card border-b border-border p-4">
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
               <div className="tour-welcome">
-                <h1 className="text-xl lg:text-2xl font-bold text-foreground">Movie Scheduling Dashboard</h1>
-                <p className="text-sm lg:text-base text-muted-foreground">
-                  Drag movies from the sidebar to schedule shows for your cinema
-                </p>
+                {selectedMovie ? (
+                  <>
+                    <div className="mb-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate('/exhibitor/home')}
+                        className="-ml-2"
+                      >
+                        <Icon name="ArrowLeft" size={16} className="mr-2" />
+                        Back to Movies
+                      </Button>
+                    </div>
+                    <h1 className="text-xl lg:text-2xl font-bold text-foreground">{selectedMovie.title} - Schedule & Collections</h1>
+                    <p className="text-sm lg:text-base text-muted-foreground">
+                      Manage show schedules and submit collections for this movie
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h1 className="text-xl lg:text-2xl font-bold text-foreground">Movie Scheduling Dashboard</h1>
+                    <p className="text-sm lg:text-base text-muted-foreground">
+                      Drag movies from the sidebar to schedule shows for your cinema
+                    </p>
+                  </>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-2 lg:gap-3 w-full lg:w-auto">
@@ -152,7 +182,7 @@ const ExhibitorDashboard = () => {
                   <span className="hidden sm:inline">Clear Week</span>
                   <span className="sm:hidden">Clear</span>
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -191,7 +221,7 @@ const ExhibitorDashboard = () => {
             <div className="lg:col-span-2 xl:col-span-2 w-full justify-center justify-items-center text-center">
               <ScheduleSummary />
             </div>
-            
+
             {/* Quick Actions */}
             <div className="space-y-4">
               <div>
@@ -206,7 +236,7 @@ const ExhibitorDashboard = () => {
                     <Icon name="FileText" size={16} className="mr-2" />
                     Submit Collections
                   </Button>
-                  
+
                   <Button
                     variant="outline"
                     size="sm"
@@ -216,7 +246,7 @@ const ExhibitorDashboard = () => {
                     <Icon name="BookOpen" size={16} className="mr-2" />
                     View Ledger
                   </Button>
-                  
+
                   <Button
                     variant="outline"
                     size="sm"
@@ -265,7 +295,7 @@ const ExhibitorDashboard = () => {
             <Icon name="FileText" size={16} />
             <span className="text-xs">Collections</span>
           </Button>
-          
+
           <Button
             variant="outline"
             size="sm"
@@ -275,7 +305,7 @@ const ExhibitorDashboard = () => {
             <Icon name="BookOpen" size={16} />
             <span className="text-xs">Ledger</span>
           </Button>
-          
+
           <Button
             variant="outline"
             size="sm"

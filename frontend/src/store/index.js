@@ -8,6 +8,7 @@ import analyticsReducer from './analyticsSlice';
 import exhibitorScheduleReducer from './exhibitorScheduleSlice';
 import exhibitorMoviesReducer from './exhibitorMoviesSlice';
 import exhibitorCollectionsReducer from './exhibitorCollectionsSlice';
+import exhibitorHomeReducer from './exhibitorHomeSlice';
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +21,7 @@ export const store = configureStore({
     exhibitorSchedule: exhibitorScheduleReducer,
     exhibitorMovies: exhibitorMoviesReducer,
     exhibitorCollections: exhibitorCollectionsReducer,
+    exhibitorHome: exhibitorHomeReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(apiSlice.middleware),

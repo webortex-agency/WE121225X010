@@ -7,6 +7,7 @@ const connectDB = require('./config/db');
 const User = require('./models/User');
 const Movie = require('./models/Movie');
 const Exhibitor = require('./models/Exhibitor');
+const MovieExhibitorAssignment = require('./models/MovieExhibitorAssignment');
 
 // Load env vars
 dotenv.config();
@@ -20,36 +21,48 @@ const importData = async () => {
     await User.deleteMany();
     await Movie.deleteMany();
     await Exhibitor.deleteMany();
+    await MovieExhibitorAssignment.deleteMany();
 
     console.log('Data Destroyed!');
 
     // Create a sample movie for manager/producer
     const movie = await Movie.create({
       movie_id: 'MOV-2025-001',
-      movie_name: 'Game Changer',
+      title: 'Game Changer',
       release_date: new Date('2025-01-10'),
-      budget: 10000000,
-      year: 2025,
-      sequence: 1,
+      genre: 'Action',
+      description: 'An action-packed thriller featuring high-octane sequences and gripping storyline.',
+      status: 'active',
     });
 
     console.log('Sample movie created.');
 
     // Create a sample exhibitor
     const exhibitor = await Exhibitor.create({
-        theater_name: 'Gowri Theater',
-        address: '123 Main St, Anytown',
-        contact_person: 'John Doe',
-        phone: '555-1234',
-        email: 'contact@gowritheater.com',
-        gst_number: 'GSTIN123456789',
-        login_credentials: {
-            email: 'exhibitor@moviedist.com',
-            password_hash: 'Exhibitor@123' // Will be hashed by pre-save hook
-        }
+      exhibitor_id: 'EXH-001',
+      name: 'Gowri Theater',
+      theater_location: '123 Main St, Anytown, State - 123456',
+      contact: '555-1234',
+      email: 'contact@gowritheater.com',
+      login_credentials: {
+        email: 'exhibitor@moviedist.com',
+        password_hash: 'Exhibitor@123' // Will be hashed by pre-save hook
+      },
+      status: 'active',
     });
 
     console.log('Sample exhibitor created.');
+
+    // Create movie-exhibitor assignment
+    const assignment = await MovieExhibitorAssignment.create({
+      movie_id: movie._id,
+      exhibitor_id: exhibitor._id,
+      assigned_date: new Date(),
+      status: 'active',
+      agreement_accepted: false, // Exhibitor needs to accept the agreement
+    });
+
+    console.log('Movie-Exhibitor assignment created.');
 
     const salt = await bcrypt.genSalt(10);
 
@@ -102,6 +115,7 @@ const destroyData = async () => {
     await User.deleteMany();
     await Movie.deleteMany();
     await Exhibitor.deleteMany();
+    await MovieExhibitorAssignment.deleteMany();
     console.log('Data Destroyed!');
     process.exit();
   } catch (err) {
