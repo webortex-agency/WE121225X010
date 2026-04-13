@@ -18,7 +18,8 @@ const MovieFormModal = ({ movie, onClose }) => {
     status: 'active',
     budget: '',
     duration: '',
-    posterUrl: ''
+    posterUrl: '',
+    distributor_percent: 60,
   });
 
   const [errors, setErrors] = useState({});
@@ -40,7 +41,8 @@ const MovieFormModal = ({ movie, onClose }) => {
         status: movie.status || 'active',
         budget: movie.budget?.toString() || '',
         duration: movie.duration?.toString() || '',
-        posterUrl: movie.posterUrl || ''
+        posterUrl: movie.posterUrl || '',
+        distributor_percent: movie.revenue_sharing?.distributor_percent ?? movie.distributor_percent ?? 60,
       });
     }
   }, [movie]);
@@ -265,6 +267,34 @@ const MovieFormModal = ({ movie, onClose }) => {
               placeholder="Enter poster image URL (optional)"
               disabled={isSubmitting}
             />
+          </div>
+
+          {/* Revenue Sharing */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-foreground">Revenue Sharing</h3>
+            <p className="text-sm text-muted-foreground">Configure how collections are split between distributor and exhibitor.</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-foreground">Distributor % *</label>
+                <input
+                  type="number"
+                  min="0" max="100"
+                  value={formData.distributor_percent ?? 60}
+                  onChange={(e) => setFormData((p) => ({ ...p, distributor_percent: Number(e.target.value) }))}
+                  className="mt-1 w-full px-3 py-2 border border-border rounded-md text-sm bg-background"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Exhibitor %</label>
+                <input
+                  type="number"
+                  readOnly
+                  value={100 - (formData.distributor_percent ?? 60)}
+                  className="mt-1 w-full px-3 py-2 border border-border rounded-md text-sm bg-muted cursor-not-allowed"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Auto-calculated (100 − Distributor %)</p>
+              </div>
+            </div>
           </div>
 
           {/* Status */}

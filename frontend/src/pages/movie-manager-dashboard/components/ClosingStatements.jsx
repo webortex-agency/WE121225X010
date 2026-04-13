@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import Icon from '../../../components/AppIcon';
+import { downloadStatementPDF } from '../../../utils/api';
 
-const ClosingStatements = ({ statementsData }) => {
+const ClosingStatements = ({ statementsData, movieId }) => {
   const [selectedStatement, setSelectedStatement] = useState(null);
+  const [downloading, setDownloading] = useState(null);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
       maximumFractionDigits: 0,
-    })?.format(amount);
+    })?.format(amount || 0);
   };
 
   const handleViewStatement = (statement) => {
@@ -18,6 +20,19 @@ const ClosingStatements = ({ statementsData }) => {
 
   const handleCloseModal = () => {
     setSelectedStatement(null);
+  };
+
+  const handleDownloadPDF = async (statement) => {
+    if (!statement?.id) return;
+    setDownloading(statement.id);
+    try {
+      const filename = `PCS-${movieId || 'movie'}-${statement.theaterName || 'theater'}.pdf`.replace(/\s+/g, '_');
+      await downloadStatementPDF(statement.id, filename);
+    } catch (err) {
+      alert('Failed to download PDF: ' + err.message);
+    } finally {
+      setDownloading(null);
+    }
   };
 
   return (
@@ -94,11 +109,16 @@ const ClosingStatements = ({ statementsData }) => {
                 <Icon name="Eye" size={16} />
                 View Details
               </button>
-              <button className="px-4 py-2 rounded-md border border-border hover:bg-muted transition-colors">
-                <Icon name="Download" size={16} />
-              </button>
-              <button className="px-4 py-2 rounded-md border border-border hover:bg-muted transition-colors">
-                <Icon name="Printer" size={16} />
+              <button
+                onClick={() => handleDownloadPDF(statement)}
+                disabled={downloading === statement?.id || !statement?.id}
+                title={!statement?.id ? 'No PDF available' : 'Download PDF'}
+                className="px-4 py-2 rounded-md border border-border hover:bg-muted disabled:opacity-50 transition-colors"
+              >
+                {downloading === statement?.id
+                  ? <Icon name="Loader2" size={16} className="animate-spin" />
+                  : <Icon name="Download" size={16} />
+                }
               </button>
             </div>
           </div>
@@ -177,15 +197,21 @@ const ClosingStatements = ({ statementsData }) => {
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
-                <button className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-border hover:bg-muted transition-colors">
-                  <Icon name="Download" size={16} />
+                <button
+                  onClick={() => handleDownloadPDF(selectedStatement)}
+                  disabled={downloading === selectedStatement?.id || !selectedStatement?.id}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-border hover:bg-muted disabled:opacity-50 transition-colors"
+                >
+                  {downloading === selectedStatement?.id
+                    ? <Icon name="Loader2" size={16} className="animate-spin" />
+                    : <Icon name="Download" size={16} />
+                  }
                   Download PDF
                 </button>
-                <button className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-border hover:bg-muted transition-colors">
-                  <Icon name="FileSpreadsheet" size={16} />
-                  Export Excel
-                </button>
-                <button className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+                <button
+                  onClick={() => window.print()}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
                   <Icon name="Printer" size={16} />
                   Print Statement
                 </button>

@@ -6,6 +6,7 @@ import { selectActiveExhibitors } from '../../store/exhibitorsSlice';
 import { selectAllCollections } from '../../store/collectionsSlice';
 import { selectMetrics } from '../../store/analyticsSlice';
 import { autoInitialize } from '../../utils/initializeMockData';
+import { getAdminStats, getAllCollections } from '../../utils/api';
 import RoleBasedNavigation from '../../components/ui/RoleBasedNavigation';
 import QuickActionToolbar from '../../components/ui/QuickActionToolbar';
 import StatusIndicatorPanel from '../../components/ui/StatusIndicatorPanel';
@@ -175,25 +176,63 @@ const AdminDashboard = () => {
       iconColor: 'bg-gradient-to-br from-green-500 to-green-600',
       route: '/admin/analytics',
     },
+    {
+      title: 'User Management',
+      description: 'Create and manage all platform users',
+      icon: 'Users',
+      iconColor: 'bg-gradient-to-br from-rose-500 to-rose-600',
+      route: '/admin/users',
+    },
   ];
 
   useEffect(() => {
-    // Check authentication
     if (!userInfo || userInfo.user?.role !== 'admin') {
       navigate('/');
       return;
     }
 
-    // Initialize mock data
     autoInitialize();
 
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1000);
+    const fetchDashboardData = async () => {
+      try {
+        const [statsRes, collectionsRes] = await Promise.allSettled([
+          getAdminStats(),
+          getAllCollections({ limit: 5, page: 1 }),
+        ]);
 
-    return () => {
-      clearTimeout(timer);
+        if (statsRes.status === 'fulfilled') {
+          const s = statsRes.value;
+          setMetrics((prev) => ({
+            ...prev,
+            pendingSubmissions: s.pending || 0,
+            todayCollections: s.totalRevenue || prev.todayCollections,
+          }));
+          setQuickStats((prev) => ({
+            ...prev,
+            pendingApprovals: s.pending || 0,
+          }));
+        }
+
+        if (collectionsRes.status === 'fulfilled') {
+          const mapped = (collectionsRes.value.collections || []).map((c) => ({
+            id: c._id,
+            theater: c.theater_name || c.exhibitor_id?.name || 'Unknown',
+            location: c.exhibitor_id?.theater_location || '',
+            movie: c.movie_id,
+            date: c.date ? new Date(c.date).toISOString().split('T')[0] : '',
+            amount: c.net_collection || 0,
+            status: c.status,
+          }));
+          if (mapped.length > 0) setRecentCollections(mapped);
+        }
+      } catch (err) {
+        console.error('Failed to fetch dashboard data:', err);
+      } finally {
+        setLoading(false);
+      }
     };
+
+    fetchDashboardData();
   }, [navigate, userInfo]);
 
   const handleApproveCollection = (collectionId) => {

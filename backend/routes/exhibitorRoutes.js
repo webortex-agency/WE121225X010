@@ -5,6 +5,7 @@ const {
   getExhibitors,
   updateExhibitor,
   deleteExhibitor,
+  getExhibitorById,
 } = require('../controllers/exhibitorController');
 const { protect, admin } = require('../middleware/authMiddleware');
 
@@ -16,6 +17,7 @@ router.route('/')
   .get(getExhibitors);
 
 router.route('/:id')
+  .get(getExhibitorById)
   .put(updateExhibitor)
   .delete(deleteExhibitor);
 

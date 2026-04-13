@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat /c/Users/sisin/Downloads/WE121225X010/frontend/src/store/*.js)",
+      "Bash(cat /c/Users/sisin/Downloads/WE121225X010/frontend/src/store/*.jsx)",
+      "Bash(npm install:*)",
+      "Bash(node --check controllers/collectionController.js)",
+      "Bash(node --check controllers/ledgerController.js)",
+      "Bash(node --check controllers/closingStatementController.js)",
+      "Bash(node --check routes/collectionRoutes.js)",
+      "Bash(node --check routes/ledgerRoutes.js)",
+      "Bash(node --check src/utils/api.js)",
+      "Bash(node --check /c/Users/sisin/Downloads/WE121225X010/backend/server.js)"
+    ]
+  }
+}

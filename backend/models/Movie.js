@@ -33,6 +33,13 @@ const MovieSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   },
+  // Revenue sharing configuration (percentages)
+  revenue_sharing: {
+    distributor_percent: { type: Number, default: 60 },
+    exhibitor_percent: { type: Number, default: 40 },
+  },
+  budget: { type: Number, default: 0 },
+  language: { type: String, default: 'Hindi' },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Movie', MovieSchema);

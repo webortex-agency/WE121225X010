@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import RoleBasedNavigation from '../../components/ui/RoleBasedNavigation';
@@ -11,6 +11,7 @@ import PerformanceAnalytics from './components/PerformanceAnalytics';
 import LedgerSummary from './components/LedgerSummary';
 import ClosingStatements from './components/ClosingStatements';
 import Icon from '../../components/AppIcon';
+import { getCollectionsByMovie, getMovieAnalytics, listStatements } from '../../utils/api';
 
 const MovieManagerDashboard = () => {
   const [activeTab, setActiveTab] = useState('collections');
@@ -20,247 +21,178 @@ const MovieManagerDashboard = () => {
   const { movie_id } = useParams();
   const { userInfo } = useSelector((state) => state.auth);
 
+  // Live data state
+  const [movieData, setMovieData] = useState(null);
+  const [collectionsData, setCollectionsData] = useState([]);
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [ledgerData, setLedgerData] = useState(null);
+  const [statementsData, setStatementsData] = useState([]);
+  const [dataLoading, setDataLoading] = useState(false);
+
   useEffect(() => {
     if (!userInfo || (userInfo.user?.role !== 'manager' && userInfo.user?.role !== 'producer')) {
       navigate('/');
       return;
     }
 
-    // Check if movie_id is provided and matches user's assigned movie
     if (movie_id && userInfo.user?.assigned_movie_id !== movie_id) {
       setError({
         type: 'movie_not_assigned',
         message: `The movie "${movie_id}" is not assigned to you, ${userInfo.user?.name || 'User'}. You are assigned to movie "${userInfo.user?.assigned_movie_id}".`,
         userMovie: userInfo.user?.assigned_movie_id,
         requestedMovie: movie_id,
-        userName: userInfo.user?.name
+        userName: userInfo.user?.name,
       });
       setIsLoading(false);
       return;
     }
 
-    // If no movie_id in URL but user has assigned movie, redirect to correct URL
     if (!movie_id && userInfo.user?.assigned_movie_id) {
       navigate(`/movie-manager-dashboard/${userInfo.user.assigned_movie_id}`, { replace: true });
       return;
     }
 
-    setTimeout(() => setIsLoading(false), 800);
+    setIsLoading(false);
   }, [navigate, userInfo, movie_id]);
 
-  const movieData = {
-    movieId: "MOV-2023-045",
-    title: "Pathaan",
-    posterImage: "https://img.rocket.new/generatedImages/rocket_gen_img_1435ef291-1764821685582.png",
-    posterImageAlt: "Action-packed movie poster featuring intense dramatic scene with protagonist in dynamic pose against explosive background with vibrant orange and blue color grading",
-    releaseDate: "25/01/2023",
-    duration: 146,
-    genre: "Action Thriller",
-    status: "Running",
-    totalCollections: 157500000,
-    collectionTrend: 12.5,
-    theaterCount: 245,
-    cityCount: 48,
-    avgOccupancy: 78,
-    occupancyTrend: 5.2,
-    roi: 285.5,
-    budget: 55000000
-  };
+  const fetchLiveData = useCallback(async () => {
+    if (!movie_id) return;
+    setDataLoading(true);
+    try {
+      const [colRes, analyticsRes, stmtRes] = await Promise.allSettled([
+        getCollectionsByMovie(movie_id, { limit: 50 }),
+        getMovieAnalytics(movie_id),
+        listStatements({ movie_id }),
+      ]);
 
-  const collectionsData = [
-  {
-    date: "08/12/2023",
-    theaterName: "PVR Cinemas Phoenix",
-    matinee: 125000,
-    afternoon: 185000,
-    firstShow: 245000,
-    secondShow: 195000,
-    acCharges: 15000,
-    totalCollection: 735000,
-    status: "Approved"
-  },
-  {
-    date: "08/12/2023",
-    theaterName: "INOX Megaplex",
-    matinee: 95000,
-    afternoon: 145000,
-    firstShow: 225000,
-    secondShow: 175000,
-    acCharges: 12800,
-    totalCollection: 627200,
-    status: "Approved"
-  },
-  {
-    date: "07/12/2023",
-    theaterName: "Cinepolis DLF",
-    matinee: 115000,
-    afternoon: 165000,
-    firstShow: 235000,
-    secondShow: 185000,
-    acCharges: 14000,
-    totalCollection: 686000,
-    status: "Pending"
-  },
-  {
-    date: "07/12/2023",
-    theaterName: "PVR Cinemas Phoenix",
-    matinee: 135000,
-    afternoon: 195000,
-    firstShow: 255000,
-    secondShow: 205000,
-    acCharges: 15800,
-    totalCollection: 774200,
-    status: "Approved"
-  },
-  {
-    date: "06/12/2023",
-    theaterName: "Carnival Cinemas",
-    matinee: 85000,
-    afternoon: 125000,
-    firstShow: 195000,
-    secondShow: 155000,
-    acCharges: 11200,
-    totalCollection: 548800,
-    status: "Approved"
-  }];
+      // Collections
+      if (colRes.status === 'fulfilled') {
+        const mapped = (colRes.value.collections || []).map((c) => ({
+          date: c.date ? new Date(c.date).toLocaleDateString('en-IN') : '',
+          theaterName: c.theater_name || 'Unknown',
+          matinee: c.shows?.matinee?.collection || 0,
+          afternoon: c.shows?.afternoon?.collection || 0,
+          firstShow: c.shows?.first_show?.collection || 0,
+          secondShow: c.shows?.second_show?.collection || 0,
+          acCharges: 0,
+          totalCollection: c.totals?.collection || 0,
+          netCollection: c.net_collection || 0,
+          status: c.status.charAt(0).toUpperCase() + c.status.slice(1),
+        }));
+        setCollectionsData(mapped);
+      }
 
+      // Analytics
+      if (analyticsRes.status === 'fulfilled') {
+        const a = analyticsRes.value;
+        setMovieData((prev) => ({
+          ...(prev || {}),
+          movieId: movie_id,
+          title: movie_id,
+          totalCollections: a.totalGross || 0,
+          theaterCount: a.theaterCount || 0,
+          status: 'Running',
+        }));
 
-  const analyticsData = {
-    dailyTrend: [
-    { date: "01/12", collection: 6500000, occupancy: 72 },
-    { date: "02/12", collection: 7200000, occupancy: 75 },
-    { date: "03/12", collection: 8100000, occupancy: 78 },
-    { date: "04/12", collection: 7800000, occupancy: 76 },
-    { date: "05/12", collection: 8500000, occupancy: 80 },
-    { date: "06/12", collection: 9200000, occupancy: 82 },
-    { date: "07/12", collection: 8900000, occupancy: 79 }],
+        const dailyTrend = (a.dailyTrend || []).map((d) => ({
+          date: d.date ? new Date(d.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '',
+          collection: d.gross || 0,
+          net: d.net || 0,
+          occupancy: 0,
+        }));
 
-    weeklyAnalysis: [
-    { week: "Week 1 (Fri-Thu)", collection: 45000000, target: 40000000 },
-    { week: "Week 2 (Fri-Thu)", collection: 52000000, target: 45000000 },
-    { week: "Week 3 (Fri-Thu)", collection: 48000000, target: 42000000 },
-    { week: "Week 4 (Fri-Thu)", collection: 12500000, target: 15000000 }],
+        const weeklyAnalysis = (a.weeklySummary || []).map((w) => ({
+          week: w.week,
+          collection: w.gross || 0,
+          net: w.net || 0,
+          target: 0,
+        }));
 
-    theaterComparison: [
-    { name: "PVR Cinemas Phoenix", city: "Mumbai", collection: 15750000, growth: 12.5 },
-    { name: "INOX Megaplex", city: "Delhi", collection: 14200000, growth: 8.3 },
-    { name: "Cinepolis DLF", city: "Bangalore", collection: 12800000, growth: 15.2 },
-    { name: "Carnival Cinemas", city: "Pune", collection: 9500000, growth: 6.7 },
-    { name: "Miraj Cinemas", city: "Hyderabad", collection: 8750000, growth: 10.1 }],
+        const theaterComparison = (a.theaterSummary || []).map((t) => ({
+          name: t.theater,
+          city: t.location || '',
+          collection: t.gross || 0,
+          net: t.net || 0,
+          growth: 0,
+        }));
 
-    insights: {
-      peakDay: "Saturday",
-      peakDayCollection: 9200000,
-      avgPerTheater: 642857,
-      bestShow: "First Show",
-      bestShowOccupancy: 85,
-      growthRate: 8.3
+        setAnalyticsData({
+          dailyTrend,
+          weeklyAnalysis,
+          theaterComparison,
+          insights: {
+            peakDay: 'N/A',
+            peakDayCollection: 0,
+            avgPerTheater: a.theaterCount > 0 ? Math.round(a.totalGross / a.theaterCount) : 0,
+            bestShow: 'N/A',
+            bestShowOccupancy: 0,
+            growthRate: 0,
+          },
+          totals: {
+            totalGross: a.totalGross || 0,
+            totalNet: a.totalNet || 0,
+            totalDays: a.totalDays || 0,
+            totalShows: a.totalShows || 0,
+          },
+        });
+
+        // Build ledger summary from analytics data
+        setLedgerData({
+          summary: {
+            totalCredits: a.totalNet || 0,
+            creditCount: a.totalDays || 0,
+            totalDebits: 0,
+            debitCount: 0,
+            netBalance: a.totalNet || 0,
+            pendingSettlements: 0,
+            pendingCount: 0,
+          },
+          entries: (a.dailyTrend || []).slice(0, 10).map((d) => ({
+            date: d.date ? new Date(d.date).toLocaleDateString('en-IN') : '',
+            theaterName: d.theater || '',
+            description: `Daily collection - ${d.day_name || ''}`,
+            type: 'Credit',
+            amount: d.net || 0,
+            status: 'Settled',
+          })),
+        });
+      }
+
+      // Statements
+      if (stmtRes.status === 'fulfilled') {
+        const mapped = (stmtRes.value.statements || []).map((s) => ({
+          id: s._id,
+          title: `${s.theater_name} — ${new Date(s.date_from).toLocaleDateString('en-IN')} to ${new Date(s.date_to).toLocaleDateString('en-IN')}`,
+          period: `${new Date(s.date_from).toLocaleDateString('en-IN')} - ${new Date(s.date_to).toLocaleDateString('en-IN')}`,
+          generatedDate: new Date(s.generated_date).toLocaleDateString('en-IN'),
+          status: 'Final',
+          totalCollections: s.totals?.total_gross || 0,
+          acCharges: 0,
+          netPayable: s.totals?.total_payable || 0,
+          theaterName: s.theater_name,
+        }));
+        setStatementsData(mapped);
+      }
+    } catch (err) {
+      console.error('Failed to load live data:', err);
+    } finally {
+      setDataLoading(false);
     }
-  };
+  }, [movie_id]);
 
-  const ledgerData = {
-    summary: {
-      totalCredits: 157500000,
-      creditCount: 245,
-      totalDebits: 45200000,
-      debitCount: 89,
-      netBalance: 112300000,
-      pendingSettlements: 8500000,
-      pendingCount: 12
-    },
-    entries: [
-    {
-      date: "08/12/2023",
-      theaterName: "PVR Cinemas Phoenix",
-      description: "Daily collection - 4 shows",
-      type: "Credit",
-      amount: 735000,
-      status: "Settled"
-    },
-    {
-      date: "08/12/2023",
-      theaterName: "INOX Megaplex",
-      description: "Daily collection - 4 shows",
-      type: "Credit",
-      amount: 627200,
-      status: "Settled"
-    },
-    {
-      date: "07/12/2023",
-      theaterName: "PVR Cinemas Phoenix",
-      description: "Settlement payment",
-      type: "Debit",
-      amount: 500000,
-      status: "Settled"
-    },
-    {
-      date: "07/12/2023",
-      theaterName: "Cinepolis DLF",
-      description: "Daily collection - 4 shows",
-      type: "Credit",
-      amount: 686000,
-      status: "Pending"
-    },
-    {
-      date: "06/12/2023",
-      theaterName: "Carnival Cinemas",
-      description: "Daily collection - 4 shows",
-      type: "Credit",
-      amount: 548800,
-      status: "Settled"
-    }]
+  useEffect(() => {
+    if (!isLoading && movie_id && !error) {
+      fetchLiveData();
+    }
+  }, [isLoading, movie_id, error, fetchLiveData]);
 
-  };
-
-  const statementsData = [
-  {
-    title: "Week 1 Closing Statement",
-    period: "01/12/2023 - 07/12/2023",
-    generatedDate: "08/12/2023",
-    status: "Final",
-    totalCollections: 45000000,
-    acCharges: 900000,
-    netPayable: 44100000,
-    theaterCount: 245,
-    totalShows: 6860,
-    daywiseSummary: [
-    { date: "01/12/2023", shows: 980, gross: 6500000, acCharges: 130000, net: 6370000 },
-    { date: "02/12/2023", shows: 980, gross: 7200000, acCharges: 144000, net: 7056000 },
-    { date: "03/12/2023", shows: 980, gross: 8100000, acCharges: 162000, net: 7938000 },
-    { date: "04/12/2023", shows: 980, gross: 7800000, acCharges: 156000, net: 7644000 },
-    { date: "05/12/2023", shows: 980, gross: 8500000, acCharges: 170000, net: 8330000 },
-    { date: "06/12/2023", shows: 980, gross: 9200000, acCharges: 184000, net: 9016000 },
-    { date: "07/12/2023", shows: 980, gross: 8900000, acCharges: 178000, net: 8722000 }]
-
-  },
-  {
-    title: "Week 2 Closing Statement",
-    period: "08/12/2023 - 14/12/2023",
-    generatedDate: "15/12/2023",
-    status: "Draft",
-    totalCollections: 52000000,
-    acCharges: 1040000,
-    netPayable: 50960000,
-    theaterCount: 245,
-    totalShows: 6860,
-    daywiseSummary: [
-    { date: "08/12/2023", shows: 980, gross: 7500000, acCharges: 150000, net: 7350000 },
-    { date: "09/12/2023", shows: 980, gross: 8200000, acCharges: 164000, net: 8036000 },
-    { date: "10/12/2023", shows: 980, gross: 7800000, acCharges: 156000, net: 7644000 },
-    { date: "11/12/2023", shows: 980, gross: 6900000, acCharges: 138000, net: 6762000 },
-    { date: "12/12/2023", shows: 980, gross: 7200000, acCharges: 144000, net: 7056000 },
-    { date: "13/12/2023", shows: 980, gross: 7100000, acCharges: 142000, net: 6958000 },
-    { date: "14/12/2023", shows: 980, gross: 7300000, acCharges: 146000, net: 7154000 }]
-  }];
-
-  let tabs = [
+  const tabs = [
     { id: 'collections', label: 'Collections View', icon: 'IndianRupee' },
     { id: 'analytics', label: 'Performance Analytics', icon: 'BarChart3' },
     { id: 'ledger', label: 'Ledger Summary', icon: 'BookOpen' },
-    { id: 'statements', label: 'Closing Statements', icon: 'FileText' }
+    { id: 'statements', label: 'Closing Statements', icon: 'FileText' },
   ];
 
-  // Show error if movie is not assigned to user
   if (error && error.type === 'movie_not_assigned') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -302,6 +234,15 @@ const MovieManagerDashboard = () => {
     );
   }
 
+  // Fallback movie data if analytics haven't loaded yet
+  const displayMovieData = movieData || {
+    movieId: movie_id,
+    title: movie_id,
+    status: 'Running',
+    totalCollections: 0,
+    theaterCount: 0,
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <RoleBasedNavigation userRole={userInfo?.user?.role || 'manager'} />
@@ -312,10 +253,22 @@ const MovieManagerDashboard = () => {
             <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between mb-4">
               <div>
                 <h1 className="text-2xl font-semibold text-foreground mb-2">Movie Manager Dashboard</h1>
-                <p className="text-muted-foreground">Monitor movie performance and financial data with read-only access</p>
+                <p className="text-muted-foreground">
+                  Live performance data for <strong>{movie_id}</strong>
+                  {dataLoading && <span className="ml-2 text-xs text-muted-foreground animate-pulse">Loading...</span>}
+                </p>
               </div>
-              <div className="w-full lg:w-96">
-                <SearchInterface userRole="manager" />
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={fetchLiveData}
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground border border-border px-3 py-1.5 rounded-md"
+                >
+                  <Icon name="RefreshCw" size={14} />
+                  Refresh
+                </button>
+                <div className="w-full lg:w-80">
+                  <SearchInterface userRole="manager" />
+                </div>
               </div>
             </div>
           </div>
@@ -323,33 +276,72 @@ const MovieManagerDashboard = () => {
           <StatusIndicatorPanel userRole="manager" />
 
           <div className="mt-6">
-            <MovieDetailsHeader movieData={movieData} />
+            <MovieDetailsHeader movieData={displayMovieData} />
           </div>
 
           <div className="bg-card border border-border rounded-lg overflow-hidden">
             <div className="border-b border-border overflow-x-auto">
               <div className="flex">
-                {tabs?.map((tab) =>
-                <button
-                  key={tab?.id}
-                  onClick={() => setActiveTab(tab?.id)}
-                  className={`flex items-center gap-2 px-6 py-4 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
-                  activeTab === tab?.id ?
-                  'border-primary text-primary bg-primary/5' : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'}`
-                  }>
-
-                    <Icon name={tab?.icon} size={16} />
-                    {tab?.label}
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-6 py-4 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
+                      activeTab === tab.id
+                        ? 'border-primary text-primary bg-primary/5'
+                        : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    }`}
+                  >
+                    <Icon name={tab.icon} size={16} />
+                    {tab.label}
                   </button>
-                )}
+                ))}
               </div>
             </div>
 
             <div className="p-6">
-              {activeTab === 'collections' && <CollectionsView collectionsData={collectionsData} />}
-              {activeTab === 'analytics' && <PerformanceAnalytics analyticsData={analyticsData} />}
-              {activeTab === 'ledger' && <LedgerSummary ledgerData={ledgerData} />}
-              {activeTab === 'statements' && <ClosingStatements statementsData={statementsData} />}
+              {dataLoading ? (
+                <div className="flex items-center justify-center py-16">
+                  <Icon name="Loader2" size={28} className="animate-spin text-muted-foreground mr-3" />
+                  <span className="text-muted-foreground">Fetching live data...</span>
+                </div>
+              ) : (
+                <>
+                  {activeTab === 'collections' && (
+                    collectionsData.length === 0 ? (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Icon name="FileX" size={40} className="mx-auto mb-3 opacity-40" />
+                        <p>No approved collections found for {movie_id} yet.</p>
+                      </div>
+                    ) : (
+                      <CollectionsView collectionsData={collectionsData} />
+                    )
+                  )}
+                  {activeTab === 'analytics' && (
+                    analyticsData ? (
+                      <PerformanceAnalytics analyticsData={analyticsData} />
+                    ) : (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Icon name="BarChart3" size={40} className="mx-auto mb-3 opacity-40" />
+                        <p>No analytics data available yet.</p>
+                      </div>
+                    )
+                  )}
+                  {activeTab === 'ledger' && (
+                    ledgerData ? (
+                      <LedgerSummary ledgerData={ledgerData} />
+                    ) : (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Icon name="BookOpen" size={40} className="mx-auto mb-3 opacity-40" />
+                        <p>No ledger data available yet.</p>
+                      </div>
+                    )
+                  )}
+                  {activeTab === 'statements' && (
+                    <ClosingStatements statementsData={statementsData} movieId={movie_id} />
+                  )}
+                </>
+              )}
             </div>
           </div>
 
@@ -361,8 +353,8 @@ const MovieManagerDashboard = () => {
           </div>
         </div>
       </div>
-    </div>);
-
+    </div>
+  );
 };
 
 export default MovieManagerDashboard;

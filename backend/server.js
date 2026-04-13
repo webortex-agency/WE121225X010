@@ -30,6 +30,12 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/movies', require('./routes/movieRoutes'));
 app.use('/api/exhibitors', require('./routes/exhibitorRoutes'));
 app.use('/api/assignments', require('./routes/assignmentRoutes'));
+app.use('/api/collections', require('./routes/collectionRoutes'));
+app.use('/api/ledger', require('./routes/ledgerRoutes'));
+app.use('/api/statements', require('./routes/closingStatementRoutes'));
+app.use('/api/analytics', require('./routes/analyticsRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 
 const PORT = process.env.PORT || 5000;
 

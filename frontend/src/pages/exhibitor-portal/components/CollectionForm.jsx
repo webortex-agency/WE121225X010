@@ -100,10 +100,10 @@ const CollectionForm = ({ onSubmit, onSaveDraft, assignedMovies = [] }) => {
   const handleSubmit = (e) => {
     e?.preventDefault();
     setIsDraft(false);
-    
+
     if (validateForm()) {
       onSubmit({
-        ...formData,
+        formData,
         calculations,
         submittedAt: new Date()?.toISOString()
       });

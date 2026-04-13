@@ -78,4 +78,40 @@ const getAssignmentsByMovie = async (req, res) => {
     }
 };
 
-module.exports = { createAssignments, getAssignmentsByMovie };
+// @desc    Remove a movie-exhibitor assignment
+// @route   DELETE /api/assignments/:assignment_id
+// @access  Private (Admin)
+const removeAssignment = async (req, res) => {
+    try {
+        const assignment = await MovieExhibitorAssignment.findById(req.params.assignment_id);
+        if (!assignment) return res.status(404).json({ message: 'Assignment not found' });
+
+        assignment.status = 'removed';
+        assignment.removed_date = new Date();
+        await assignment.save();
+
+        res.json({ message: 'Assignment removed successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// @desc    Get assignments for a specific exhibitor
+// @route   GET /api/assignments/exhibitor/:exhibitor_id
+// @access  Private (Admin)
+const getAssignmentsByExhibitor = async (req, res) => {
+    try {
+        const assignments = await MovieExhibitorAssignment.find({
+            exhibitor_id: req.params.exhibitor_id,
+            status: 'active',
+        })
+            .populate('movie_id', 'title movie_id release_date genre status')
+            .sort({ assigned_date: -1 });
+
+        res.json({ success: true, data: assignments });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+module.exports = { createAssignments, getAssignmentsByMovie, removeAssignment, getAssignmentsByExhibitor };

@@ -13,6 +13,7 @@ import MoviesManagement from "./pages/admin-dashboard/pages/MoviesManagement";
 import ExhibitorsManagement from "./pages/admin-dashboard/pages/ExhibitorsManagement";
 import ExhibitorDetailsPage from "./pages/admin-dashboard/pages/ExhibitorDetailsPage";
 import AnalyticsPage from "./pages/admin-dashboard/pages/AnalyticsPage";
+import UserManagement from "./pages/admin-dashboard/pages/UserManagement";
 // Exhibitor Dashboard imports
 import ExhibitorDashboard from "./pages/exhibitor-dashboard";
 import ExhibitorCollectionsPage from "./pages/exhibitor-dashboard/pages/CollectionsPage";
@@ -40,6 +41,7 @@ const Routes = () => {
             <Route path="/admin/exhibitors" element={<ExhibitorsManagement />} />
             <Route path="/admin/exhibitors/:exhibitor_id" element={<ExhibitorDetailsPage />} />
             <Route path="/admin/analytics" element={<AnalyticsPage />} />
+            <Route path="/admin/users" element={<UserManagement />} />
             
             {/* Movie Manager Routes */}
             <Route

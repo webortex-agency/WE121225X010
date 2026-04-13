@@ -1,54 +1,55 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Icon from '../../../components/AppIcon';
+import { getAllCollections, approveCollection, rejectCollection } from '../../../utils/api';
+
+// Map API collection to UI shape
+const mapCollection = (c) => ({
+  id: c._id,
+  date: c.date ? new Date(c.date).toISOString().split('T')[0] : '',
+  theater: c.theater_name || c.exhibitor_id?.name || 'Unknown',
+  movie: c.movie_id,
+  movieId: c.movie_id,
+  shows: {
+    matinee: { collection: c.shows?.matinee?.collection || 0, occupancy: c.shows?.matinee?.occupancy || 0, tickets: c.shows?.matinee?.count || 0 },
+    afternoon: { collection: c.shows?.afternoon?.collection || 0, occupancy: c.shows?.afternoon?.occupancy || 0, tickets: c.shows?.afternoon?.count || 0 },
+    firstShow: { collection: c.shows?.first_show?.collection || 0, occupancy: c.shows?.first_show?.occupancy || 0, tickets: c.shows?.first_show?.count || 0 },
+    secondShow: { collection: c.shows?.second_show?.collection || 0, occupancy: c.shows?.second_show?.occupancy || 0, tickets: c.shows?.second_show?.count || 0 },
+  },
+  totalCollection: c.totals?.collection || 0,
+  acCharges: 0,
+  netCollection: c.net_collection || 0,
+  expenses: c.expenses?.total || 0,
+  status: c.status,
+  submittedAt: c.createdAt,
+  submittedBy: c.submitted_by?.name || 'Exhibitor',
+  approvedAt: c.approved_date,
+  approvedBy: c.approved_by?.name || '',
+  notes: c.notes || '',
+});
 
 const CollectionDataManagement = () => {
   const [activeTab, setActiveTab] = useState('view');
-  const [collections, setCollections] = useState([
-    {
-      id: 'COL-2023-001',
-      date: '2023-12-12',
-      theater: 'GOWRI Theater',
-      movie: 'Pathaan',
-      movieId: 'MOV-2025-001',
-      shows: {
-        matinee: { collection: 45000, occupancy: 85, tickets: 180 },
-        afternoon: { collection: 65000, occupancy: 92, tickets: 230 },
-        firstShow: { collection: 85000, occupancy: 95, tickets: 285 },
-        secondShow: { collection: 50000, occupancy: 78, tickets: 200 }
-      },
-      totalCollection: 245000,
-      acCharges: 12250,
-      netCollection: 232750,
-      expenses: 15000,
-      status: 'pending',
-      submittedAt: '2023-12-12T18:30:00Z',
-      submittedBy: 'Rajesh Kumar',
-      notes: 'Good response for weekend show'
-    },
-    {
-      id: 'COL-2023-002',
-      date: '2023-12-11',
-      theater: 'PVR Cinemas Phoenix',
-      movie: 'Jawan',
-      movieId: 'MOV-2025-002',
-      shows: {
-        matinee: { collection: 35000, occupancy: 75, tickets: 150 },
-        afternoon: { collection: 55000, occupancy: 88, tickets: 220 },
-        firstShow: { collection: 75000, occupancy: 90, tickets: 300 },
-        secondShow: { collection: 20000, occupancy: 45, tickets: 90 }
-      },
-      totalCollection: 185000,
-      acCharges: 9250,
-      netCollection: 175750,
-      expenses: 12000,
-      status: 'approved',
-      submittedAt: '2023-12-11T19:15:00Z',
-      approvedAt: '2023-12-12T10:30:00Z',
-      submittedBy: 'Priya Sharma',
-      approvedBy: 'Admin User',
-      notes: 'Regular weekday collection'
+  const [collections, setCollections] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(null);
+  const [apiError, setApiError] = useState('');
+
+  const fetchCollections = useCallback(async (params = {}) => {
+    setLoading(true);
+    setApiError('');
+    try {
+      const data = await getAllCollections({ limit: 100, ...params });
+      setCollections((data.collections || []).map(mapCollection));
+    } catch (err) {
+      setApiError(err.message || 'Failed to load collections');
+    } finally {
+      setLoading(false);
     }
-  ]);
+  }, []);
+
+  useEffect(() => {
+    fetchCollections();
+  }, [fetchCollections]);
 
   const [filters, setFilters] = useState({
     dateFrom: '',
@@ -76,31 +77,28 @@ const CollectionDataManagement = () => {
     return matchesDateFrom && matchesDateTo && matchesTheater && matchesMovie && matchesStatus;
   });
 
-  // Handle approval/rejection
-  const handleApproval = (collectionId, action, comment = '') => {
-    setCollections(prev => prev.map(collection => {
-      if (collection.id === collectionId) {
-        const now = new Date().toISOString();
-        if (action === 'approve') {
-          return {
-            ...collection,
-            status: 'approved',
-            approvedAt: now,
-            approvedBy: 'Admin User',
-            approvalComment: comment
-          };
-        } else if (action === 'reject') {
-          return {
-            ...collection,
-            status: 'rejected',
-            rejectedAt: now,
-            rejectedBy: 'Admin User',
-            rejectionReason: comment
-          };
+  // Handle approval/rejection via real API
+  const handleApproval = async (collectionId, action, comment = '') => {
+    setActionLoading(collectionId);
+    setApiError('');
+    try {
+      if (action === 'approve') {
+        await approveCollection(collectionId);
+      } else if (action === 'reject') {
+        if (!comment) {
+          setApiError('Please provide a rejection reason');
+          setActionLoading(null);
+          return;
         }
+        await rejectCollection(collectionId, comment);
       }
-      return collection;
-    }));
+      // Refresh list after action
+      await fetchCollections();
+    } catch (err) {
+      setApiError(err.message || 'Action failed');
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   // Handle edit collection
@@ -168,8 +166,13 @@ const CollectionDataManagement = () => {
     window.URL.revokeObjectURL(url);
   };
 
-  const exportToPDF = () => {
-    alert('PDF export functionality will be implemented with a PDF library');
+  const exportToPDF = async () => {
+    try {
+      const { exportCollectionsCSV } = await import('../../../utils/api');
+      await exportCollectionsCSV({ status: filters.status !== 'all' ? filters.status : undefined });
+    } catch (err) {
+      setApiError('Export failed: ' + err.message);
+    }
   };
 
   const tabs = [
@@ -210,7 +213,21 @@ const CollectionDataManagement = () => {
       </div>
 
       <div className="p-6">
-        {activeTab === 'view' && (
+        {apiError && (
+          <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md flex items-center gap-2">
+            <Icon name="AlertCircle" size={16} className="text-destructive" />
+            <p className="text-sm text-destructive">{apiError}</p>
+            <button onClick={() => setApiError('')} className="ml-auto">
+              <Icon name="X" size={14} className="text-destructive" />
+            </button>
+          </div>
+        )}
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Icon name="Loader2" size={28} className="animate-spin text-muted-foreground mr-3" />
+            <span className="text-muted-foreground">Loading collections...</span>
+          </div>
+        ) : activeTab === 'view' && (
           <div className="space-y-6">
             {/* Filters */}
             <div className="bg-muted/30 p-4 rounded-lg">
@@ -447,41 +464,47 @@ const CollectionDataManagement = () => {
 
         {activeTab === 'approve' && (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-foreground">Pending Approvals</h3>
-            
-            {collections.filter(c => c.status === 'pending').map((collection) => (
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-foreground">Pending Approvals</h3>
+              <button onClick={() => fetchCollections()} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+                <Icon name="RefreshCw" size={14} />
+                Refresh
+              </button>
+            </div>
+
+            {collections.filter(c => c.status === 'submitted' || c.status === 'pending').map((collection) => (
               <div key={collection.id} className="bg-muted/30 border border-border rounded-lg p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h4 className="font-medium text-foreground">{collection.theater} - {collection.movie}</h4>
-                    <p className="text-sm text-muted-foreground">{collection.date} | ₹{collection.totalCollection.toLocaleString()}</p>
+                    <h4 className="font-medium text-foreground">{collection.theater} — {collection.movie}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {collection.date} &nbsp;|&nbsp; Gross: ₹{(collection.totalCollection || 0).toLocaleString('en-IN')} &nbsp;|&nbsp; Net: ₹{(collection.netCollection || 0).toLocaleString('en-IN')}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Submitted by: {collection.submittedBy}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => {
-                        const comment = prompt('Add approval comment (optional):');
-                        handleApproval(collection.id, 'approve', comment || '');
-                      }}
-                      className="flex items-center gap-1 bg-green-600 text-white hover:bg-green-700 px-3 py-1 rounded text-sm"
+                      disabled={actionLoading === collection.id}
+                      onClick={() => handleApproval(collection.id, 'approve')}
+                      className="flex items-center gap-1 bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 px-3 py-1.5 rounded text-sm font-medium"
                     >
-                      <Icon name="Check" size={14} />
+                      {actionLoading === collection.id ? <Icon name="Loader2" size={13} className="animate-spin" /> : <Icon name="Check" size={13} />}
                       Approve
                     </button>
                     <button
+                      disabled={actionLoading === collection.id}
                       onClick={() => {
-                        const reason = prompt('Enter rejection reason:');
-                        if (reason) {
-                          handleApproval(collection.id, 'reject', reason);
-                        }
+                        const reason = prompt('Enter rejection reason (required):');
+                        if (reason) handleApproval(collection.id, 'reject', reason);
                       }}
-                      className="flex items-center gap-1 bg-red-600 text-white hover:bg-red-700 px-3 py-1 rounded text-sm"
+                      className="flex items-center gap-1 bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 px-3 py-1.5 rounded text-sm font-medium"
                     >
-                      <Icon name="X" size={14} />
+                      {actionLoading === collection.id ? <Icon name="Loader2" size={13} className="animate-spin" /> : <Icon name="X" size={13} />}
                       Reject
                     </button>
                   </div>
                 </div>
-                
+
                 {collection.notes && (
                   <p className="text-sm text-muted-foreground bg-muted/50 p-2 rounded">
                     <strong>Notes:</strong> {collection.notes}
@@ -490,10 +513,10 @@ const CollectionDataManagement = () => {
               </div>
             ))}
 
-            {collections.filter(c => c.status === 'pending').length === 0 && (
+            {collections.filter(c => c.status === 'submitted' || c.status === 'pending').length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 <Icon name="CheckCircle" size={48} className="mx-auto mb-4 opacity-50" />
-                <p>No pending collections to approve</p>
+                <p>No pending collections — all caught up!</p>
               </div>
             )}
           </div>

@@ -1,72 +1,58 @@
-import { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useState, useEffect, useCallback } from 'react';
 import RoleBasedNavigation from '../../../components/ui/RoleBasedNavigation';
-import QuickActionToolbar from '../../../components/ui/QuickActionToolbar';
 import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
 import KPIMetrics from '../components/KPIMetrics';
 import AnalyticsCharts from '../components/AnalyticsCharts';
-import { selectMetrics, selectChartData, selectPeriod } from '../../../store/analyticsSlice';
-import { autoInitialize } from '../../../utils/initializeMockData';
+import { getDashboardAnalytics, exportCollectionsCSV } from '../../../utils/api';
 
 const AnalyticsPage = () => {
-  const metrics = useSelector(selectMetrics);
-  const chartData = useSelector(selectChartData);
-  const currentPeriod = useSelector(selectPeriod);
-  const [selectedPeriod, setSelectedPeriod] = useState(currentPeriod || 'thisMonth');
+  const [selectedPeriod, setSelectedPeriod] = useState('thisMonth');
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    autoInitialize();
-    
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
+  const [exporting, setExporting] = useState(false);
+  const [metrics, setMetrics] = useState({
+    totalRevenue: 0, totalCollections: 0, activeMovies: 0,
+    activeExhibitors: 0, approvalRate: 0, avgCollectionValue: 0,
+    pendingCount: 0, rejectedCount: 0,
+  });
+  const [chartData, setChartData] = useState({
+    revenueTrend: [], topMovies: [], topExhibitors: [],
+    statusDistribution: [], dailySummary: [],
+  });
 
   const periodOptions = [
     { value: 'thisWeek', label: 'This Week' },
     { value: 'thisMonth', label: 'This Month' },
     { value: 'thisQuarter', label: 'This Quarter' },
     { value: 'thisYear', label: 'This Year' },
-    { value: 'custom', label: 'Custom Date Range' }
   ];
 
-  const handlePeriodChange = (period) => {
-    setSelectedPeriod(period);
-    // In a real app, this would dispatch an action to update analytics data
-    console.log('Period changed to:', period);
-  };
+  const fetchAnalytics = useCallback(async (period) => {
+    setLoading(true);
+    try {
+      const data = await getDashboardAnalytics({ period });
+      setMetrics(data.metrics || {});
+      setChartData(data.chartData || {});
+    } catch (err) {
+      console.error('Analytics fetch failed:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const handleExportPDF = () => {
-    console.log('Exporting report as PDF...');
-    // Simulate PDF generation
-    setTimeout(() => {
-      alert('PDF report generated successfully!');
-    }, 1000);
-  };
+  useEffect(() => {
+    fetchAnalytics(selectedPeriod);
+  }, [selectedPeriod, fetchAnalytics]);
 
-  const handleExportExcel = () => {
-    console.log('Exporting report as Excel...');
-    // Simulate Excel generation
-    setTimeout(() => {
-      alert('Excel report generated successfully!');
-    }, 1000);
-  };
-
-  const handleEmailReport = () => {
-    console.log('Emailing report...');
-    // Simulate email sending
-    setTimeout(() => {
-      alert('Report emailed successfully!');
-    }, 1000);
-  };
-
-  const handleScheduleReport = () => {
-    console.log('Opening schedule report dialog...');
-    alert('Schedule report feature coming soon!');
+  const handleExportCSV = async () => {
+    setExporting(true);
+    try {
+      await exportCollectionsCSV({ period: selectedPeriod });
+    } catch (err) {
+      alert('Export failed: ' + err.message);
+    } finally {
+      setExporting(false);
+    }
   };
 
   if (loading) {
@@ -74,7 +60,7 @@ const AnalyticsPage = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <Icon name="Loader2" size={48} className="animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading analytics...</p>
+          <p className="text-muted-foreground">Loading live analytics...</p>
         </div>
       </div>
     );
@@ -83,97 +69,94 @@ const AnalyticsPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <RoleBasedNavigation userRole="admin" />
-      {/* <QuickActionToolbar userRole="admin" /> */}
-      
+
       <div className="main-content with-toolbar">
         <div className="content-container">
-          {/* Header */}
           <div className="mb-6">
             <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between mb-4">
               <div>
                 <h1 className="text-2xl font-bold text-foreground mb-2">Analytics & Performance Dashboard</h1>
-                <p className="text-muted-foreground">Comprehensive insights into collections, movies, and exhibitor performance</p>
+                <p className="text-muted-foreground">
+                  Live insights from real collection data
+                </p>
               </div>
-              
+
               <div className="flex items-center gap-3">
-                {/* Period Selector */}
                 <div className="flex items-center gap-2">
                   <label className="text-sm font-medium text-foreground">Period:</label>
                   <select
                     value={selectedPeriod}
-                    onChange={(e) => handlePeriodChange(e.target.value)}
-                    className="px-3 py-2 text-sm border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    onChange={(e) => setSelectedPeriod(e.target.value)}
+                    className="px-3 py-2 text-sm border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   >
-                    {periodOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
+                    {periodOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
                   </select>
                 </div>
+                <button
+                  onClick={() => fetchAnalytics(selectedPeriod)}
+                  className="flex items-center gap-1.5 text-sm border border-border px-3 py-2 rounded-md hover:bg-muted"
+                >
+                  <Icon name="RefreshCw" size={14} />
+                  Refresh
+                </button>
               </div>
             </div>
           </div>
 
-          {/* KPI Metrics */}
-          <div className="mb-8">
-            <KPIMetrics metrics={metrics} loading={loading} />
+          {/* Live KPI summary strip */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            {[
+              { label: 'Pending Approvals', value: metrics.pendingCount, icon: 'Clock', color: 'text-amber-500' },
+              { label: 'Total Submitted', value: metrics.totalCollections, icon: 'FileText', color: 'text-blue-500' },
+              { label: 'Approval Rate', value: `${metrics.approvalRate}%`, icon: 'CheckCircle', color: 'text-green-500' },
+              { label: 'Rejected', value: metrics.rejectedCount, icon: 'XCircle', color: 'text-red-500' },
+            ].map((stat) => (
+              <div key={stat.label} className="bg-card border border-border rounded-lg p-4 flex items-center gap-3">
+                <Icon name={stat.icon} size={22} className={stat.color} />
+                <div>
+                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+                  <p className="text-xl font-bold text-foreground">{stat.value}</p>
+                </div>
+              </div>
+            ))}
           </div>
 
-          {/* Charts Section */}
           <div className="mb-8">
-            <AnalyticsCharts 
-              chartData={chartData} 
-              period={selectedPeriod}
-              loading={loading}
-            />
+            <KPIMetrics metrics={metrics} loading={false} />
           </div>
 
-          {/* Export Options */}
+          <div className="mb-8">
+            <AnalyticsCharts chartData={chartData} period={selectedPeriod} loading={false} />
+          </div>
+
+          {/* Export section */}
           <div className="bg-card border border-border rounded-lg p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">Export & Share</h3>
-                <p className="text-sm text-muted-foreground">
-                  Generate reports and share analytics with stakeholders
-                </p>
+                <h3 className="text-lg font-semibold text-foreground mb-1">Export & Share</h3>
+                <p className="text-sm text-muted-foreground">Download live collection data for the selected period</p>
               </div>
-              
+
               <div className="flex flex-wrap items-center gap-3">
                 <Button
                   variant="outline"
-                  onClick={handleExportPDF}
-                  iconName="FileText"
+                  onClick={handleExportCSV}
+                  disabled={exporting}
+                  iconName={exporting ? 'Loader2' : 'Download'}
                   iconPosition="left"
                 >
-                  Download PDF
+                  {exporting ? 'Exporting...' : 'Download CSV'}
                 </Button>
-                
+
                 <Button
                   variant="outline"
-                  onClick={handleExportExcel}
-                  iconName="Download"
+                  onClick={() => window.print()}
+                  iconName="Printer"
                   iconPosition="left"
                 >
-                  Download Excel
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  onClick={handleEmailReport}
-                  iconName="Mail"
-                  iconPosition="left"
-                >
-                  Email Report
-                </Button>
-                
-                <Button
-                  onClick={handleScheduleReport}
-                  iconName="Calendar"
-                  iconPosition="left"
-                  className="bg-teal-600 hover:bg-teal-700"
-                >
-                  Schedule Report
+                  Print Report
                 </Button>
               </div>
             </div>

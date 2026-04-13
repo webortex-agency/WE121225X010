@@ -138,4 +138,48 @@ const deleteExhibitor = async (req, res) => {
   }
 };
 
-module.exports = { createExhibitor, getExhibitors, updateExhibitor, deleteExhibitor };
+// @desc    Get single exhibitor with collections + ledger summary
+// @route   GET /api/exhibitors/:id
+// @access  Private (Admin)
+const getExhibitorById = async (req, res) => {
+  try {
+    const exhibitor = await Exhibitor.findOne({
+      $or: [{ _id: req.params.id }, { exhibitor_id: req.params.id }],
+    });
+    if (!exhibitor) return res.status(404).json({ message: 'Exhibitor not found' });
+
+    const DailyCollection = require('../models/DailyCollection');
+    const Ledger = require('../models/Ledger');
+    const MovieExhibitorAssignment = require('../models/MovieExhibitorAssignment');
+
+    const [stats, ledger, assignments] = await Promise.all([
+      DailyCollection.aggregate([
+        { $match: { exhibitor_id: exhibitor._id } },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: 1 },
+            approved: { $sum: { $cond: [{ $eq: ['$status', 'approved'] }, 1, 0] } },
+            pending: { $sum: { $cond: [{ $in: ['$status', ['submitted', 'pending']] }, 1, 0] } },
+            rejected: { $sum: { $cond: [{ $eq: ['$status', 'rejected'] }, 1, 0] } },
+            totalRevenue: { $sum: { $cond: [{ $eq: ['$status', 'approved'] }, '$net_collection', 0] } },
+          },
+        },
+      ]),
+      Ledger.findOne({ associated_entity_id: exhibitor._id, ledger_type: 'theater' }),
+      MovieExhibitorAssignment.find({ exhibitor_id: exhibitor._id, status: 'active' })
+        .populate('movie_id', 'title movie_id release_date genre status'),
+    ]);
+
+    res.json({
+      exhibitor,
+      collectionStats: stats[0] || { total: 0, approved: 0, pending: 0, rejected: 0, totalRevenue: 0 },
+      ledger: ledger || null,
+      assignments,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+module.exports = { createExhibitor, getExhibitors, updateExhibitor, deleteExhibitor, getExhibitorById };

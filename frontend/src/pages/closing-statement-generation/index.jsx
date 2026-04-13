@@ -10,6 +10,7 @@ import ValidationAlertPanel from './components/ValidationAlertPanel';
 import BatchProcessingPanel from './components/BatchProcessingPanel';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
+import { generateStatement, downloadStatementPDF } from '../../utils/api';
 
 const ClosingStatementGeneration = () => {
   const navigate = useNavigate();
@@ -132,27 +133,54 @@ const ClosingStatementGeneration = () => {
     ];
   };
 
-  const handleGenerate = (config) => {
+  const [generatedStatementId, setGeneratedStatementId] = useState(null);
+  const [generateError, setGenerateError] = useState('');
+
+  const handleGenerate = async (config) => {
     setIsGenerating(true);
     setValidationResults([]);
+    setGenerateError('');
+    setGeneratedStatementId(null);
 
-    setTimeout(() => {
+    try {
+      const payload = {
+        movie_id: config.movieId || config.movie_id,
+        theater_name: config.theaterName || config.theater_name,
+        date_from: config.startDate || config.date_from,
+        date_to: config.endDate || config.date_to,
+      };
+
+      const result = await generateStatement(payload);
+      setGeneratedStatementId(result.statement?._id);
+
+      // Also generate preview data for the UI
       const mockData = generateMockStatementData(config);
-      const mockValidation = generateMockValidationResults();
-
       setStatementData(mockData);
-      setValidationResults(mockValidation);
+      setValidationResults([]);
+    } catch (err) {
+      setGenerateError(err.message || 'Failed to generate statement');
+      // Fall back to mock preview so user can still see the layout
+      const mockData = generateMockStatementData(config);
+      setStatementData(mockData);
+      setValidationResults(generateMockValidationResults());
+    } finally {
       setIsGenerating(false);
-    }, 2000);
+    }
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    if (!generatedStatementId) {
+      alert('Please generate the statement first before downloading.');
+      return;
+    }
     setIsExporting(true);
-
-    setTimeout(() => {
+    try {
+      await downloadStatementPDF(generatedStatementId, `closing-statement-${generatedStatementId}.pdf`);
+    } catch (err) {
+      alert('PDF download failed: ' + err.message);
+    } finally {
       setIsExporting(false);
-      alert('Statement exported successfully as PDF!');
-    }, 1500);
+    }
   };
 
   const handleResolveValidation = (issue) => {
@@ -221,6 +249,21 @@ const ClosingStatementGeneration = () => {
           {activeTab === 'single' ? (
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <div className="space-y-6">
+                {generateError && (
+                  <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md flex items-start gap-2">
+                    <Icon name="AlertCircle" size={16} className="text-destructive mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-destructive">Generation Error</p>
+                      <p className="text-xs text-destructive/80 mt-0.5">{generateError} — Showing preview with sample data.</p>
+                    </div>
+                  </div>
+                )}
+                {generatedStatementId && !generateError && (
+                  <div className="p-3 bg-success/10 border border-success/20 rounded-md flex items-center gap-2">
+                    <Icon name="CheckCircle2" size={16} className="text-success" />
+                    <p className="text-sm text-success font-medium">Statement generated successfully. Click "Export PDF" to download.</p>
+                  </div>
+                )}
                 <StatementConfigurationPanel
                   onGenerate={handleGenerate}
                   isGenerating={isGenerating}
