@@ -40,6 +40,7 @@ const MovieSchema = new mongoose.Schema({
   },
   budget: { type: Number, default: 0 },
   language: { type: String, default: 'Hindi' },
+  poster_url: { type: String, default: null },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Movie', MovieSchema);

@@ -19,6 +19,7 @@ import ExhibitorDashboard from "./pages/exhibitor-dashboard";
 import ExhibitorCollectionsPage from "./pages/exhibitor-dashboard/pages/CollectionsPage";
 import ExhibitorLedgerPage from "./pages/exhibitor-dashboard/pages/LedgerPage";
 import ExhibitorProfilePage from "./pages/exhibitor-dashboard/pages/ProfilePage";
+import StatementsPage from "./pages/statements";
 
 const Routes = () => {
   return (
@@ -43,6 +44,9 @@ const Routes = () => {
             <Route path="/admin/analytics" element={<AnalyticsPage />} />
             <Route path="/admin/users" element={<UserManagement />} />
             
+            {/* Statements Route */}
+            <Route path="/statements" element={<StatementsPage />} />
+
             {/* Movie Manager Routes */}
             <Route
               path="/movie-manager-dashboard/:movie_id?"

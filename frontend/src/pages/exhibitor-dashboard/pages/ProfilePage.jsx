@@ -1,60 +1,107 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { setTourCompleted } from '../../../store/exhibitorScheduleSlice';
 import RoleBasedNavigation from '../../../components/ui/RoleBasedNavigation';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Icon from '../../../components/AppIcon';
+import LoadingSpinner from '../../../components/shared/LoadingSpinner';
 import { useForm } from 'react-hook-form';
+import { getMe, updateMe } from '../../../utils/api';
 
 const ProfilePage = () => {
   const dispatch = useDispatch();
-    const userInfo = useSelector((state) => state.auth.userInfo);
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
-
-  // Mock exhibitor profile data - in real app this would come from backend
-  const [profileData, setProfileData] = useState({
-    cinemaName: 'Regal Cinema Complex',
-    ownerName: 'Rajesh Kumar',
-    email: 'rajesh@regalcinema.com',
-    phone: '+91 98765 43210',
-    address: '123 MG Road, Bangalore, Karnataka 560001',
-    gstNumber: '29ABCDE1234F1Z5',
-    panNumber: 'ABCDE1234F',
-    bankAccount: '1234567890',
-    bankName: 'State Bank of India',
-    ifscCode: 'SBIN0001234',
-    totalScreens: 3,
-    totalSeats: 600,
-    establishedYear: 2015,
-    licenseNumber: 'KA/BLR/2015/001'
-  });
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const [profileData, setProfileData] = useState(null);
 
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors, isDirty }
-  } = useForm({
-    defaultValues: profileData
-  });
+  } = useForm();
 
+  // Load profile from backend on mount
   useEffect(() => {
-    reset(profileData);
-  }, [profileData, reset]);
+    const load = async () => {
+      try {
+        const user = await getMe();
+        const prefs = user.preferences || {};
+        const merged = {
+          ownerName: user.name || '',
+          email: user.email || '',
+          phone: prefs.phone || '',
+          address: prefs.address || '',
+          cinemaName: prefs.cinemaName || '',
+          licenseNumber: prefs.licenseNumber || '',
+          totalScreens: prefs.totalScreens || '',
+          totalSeats: prefs.totalSeats || '',
+          establishedYear: prefs.establishedYear || '',
+          gstNumber: prefs.gstNumber || '',
+          panNumber: prefs.panNumber || '',
+          bankAccount: prefs.bankAccount || '',
+          bankName: prefs.bankName || '',
+          ifscCode: prefs.ifscCode || '',
+        };
+        setProfileData(merged);
+        reset(merged);
+      } catch {
+        // fallback — show empty form
+        setProfileData({});
+      }
+    };
+    load();
+  }, [reset]);
 
-  const onSubmit = (data) => {
-    setProfileData(data);
-    setIsEditing(false);
-    // In real app, this would make an API call to update profile
-    console.log('Profile updated:', data);
+  const onSubmit = async (data) => {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await updateMe({
+        name: data.ownerName,
+        email: data.email,
+        preferences: {
+          phone: data.phone,
+          address: data.address,
+          cinemaName: data.cinemaName,
+          licenseNumber: data.licenseNumber,
+          totalScreens: data.totalScreens,
+          totalSeats: data.totalSeats,
+          establishedYear: data.establishedYear,
+          gstNumber: data.gstNumber,
+          panNumber: data.panNumber,
+          bankAccount: data.bankAccount,
+          bankName: data.bankName,
+          ifscCode: data.ifscCode,
+        },
+      });
+      setProfileData(data);
+      setIsEditing(false);
+    } catch (err) {
+      setSaveError(err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancelEdit = () => {
-    reset(profileData);
+    reset(profileData || {});
     setIsEditing(false);
+    setSaveError(null);
   };
+
+  if (profileData === null) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <LoadingSpinner label="Loading profile…" />
+      </div>
+    );
+  }
 
   const handleResetTour = () => {
     dispatch(setTourCompleted(false));
@@ -77,7 +124,7 @@ const ProfilePage = () => {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary rounded-lg flex items-center justify-center">
               <Icon name="Settings" size={24} className="text-white" />
             </div>
             <div>
@@ -99,7 +146,7 @@ const ProfilePage = () => {
                     className={`
                       w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors
                       ${activeTab === tab.id 
-                        ? 'bg-teal-100 text-teal-700 border border-teal-200' 
+                        ? 'bg-primary/10 text-primary border border-primary/20' 
                         : 'text-muted-foreground hover:bg-muted/20 hover:text-foreground'
                       }
                     `}
@@ -129,7 +176,7 @@ const ProfilePage = () => {
                   variant="outline"
                   size="sm"
                   className="w-full justify-start"
-                  onClick={() => window.location.href = '/exhibitor/dashboard'}
+                  onClick={() => navigate('/exhibitor/dashboard')}
                 >
                   <Icon name="ArrowLeft" size={16} className="mr-2" />
                   Back to Dashboard
@@ -145,7 +192,7 @@ const ProfilePage = () => {
               <div className="p-6 border-b border-border">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Icon name={tabs.find(t => t.id === activeTab)?.icon} size={20} className="text-teal-600" />
+                    <Icon name={tabs.find(t => t.id === activeTab)?.icon} size={20} className="text-primary" />
                     <h2 className="text-xl font-semibold text-foreground">
                       {tabs.find(t => t.id === activeTab)?.label}
                     </h2>
@@ -155,13 +202,16 @@ const ProfilePage = () => {
                     <div className="flex items-center gap-3">
                       {isEditing ? (
                         <>
-                          <Button variant="outline" onClick={handleCancelEdit}>
+                          {saveError && (
+                            <p className="text-sm text-destructive">{saveError}</p>
+                          )}
+                          <Button variant="outline" onClick={handleCancelEdit} disabled={saving}>
                             Cancel
                           </Button>
-                          <Button 
+                          <Button
                             onClick={handleSubmit(onSubmit)}
-                            disabled={!isDirty}
-                            className="bg-teal-600 hover:bg-teal-700"
+                            disabled={!isDirty || saving}
+                            loading={saving}
                           >
                             <Icon name="Save" size={16} className="mr-2" />
                             Save Changes
@@ -276,7 +326,7 @@ const ProfileTab = ({ profileData, isEditing, register, errors }) => (
         {isEditing ? (
           <textarea
             rows={3}
-            className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+            className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
             {...register('address', { required: 'Address is required' })}
           />
         ) : (
@@ -484,7 +534,7 @@ const PreferencesTab = () => {
                 onChange={(e) => handlePreferenceChange('emailNotifications', e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-teal-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
             </label>
           </div>
 
@@ -500,7 +550,7 @@ const PreferencesTab = () => {
                 onChange={(e) => handlePreferenceChange('smsNotifications', e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-teal-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
             </label>
           </div>
         </div>
@@ -521,7 +571,7 @@ const PreferencesTab = () => {
                 onChange={(e) => handlePreferenceChange('weeklyReports', e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-teal-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
             </label>
           </div>
 
@@ -537,7 +587,7 @@ const PreferencesTab = () => {
                 onChange={(e) => handlePreferenceChange('monthlyReports', e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-teal-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
             </label>
           </div>
         </div>
@@ -558,7 +608,7 @@ const PreferencesTab = () => {
                 onChange={(e) => handlePreferenceChange('autoSaveSchedule', e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-teal-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
             </label>
           </div>
 
@@ -574,7 +624,7 @@ const PreferencesTab = () => {
                 onChange={(e) => handlePreferenceChange('showTutorials', e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-teal-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
             </label>
           </div>
         </div>

@@ -245,7 +245,7 @@ const DashboardTour = ({ isActive, onTourComplete }) => {
         <div className="fixed bottom-4 right-4 z-50">
           <button
             onClick={handleRestartTour}
-            className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 text-sm font-medium transition-colors"
+            className="bg-primary hover:bg-primary/80 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 text-sm font-medium transition-colors"
             title="Restart Dashboard Tour"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

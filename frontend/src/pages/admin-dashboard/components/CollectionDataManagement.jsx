@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import Icon from '../../../components/AppIcon';
+import Button from '../../../components/ui/Button';
+import Modal from '../../../components/shared/Modal';
+import LoadingSpinner from '../../../components/shared/LoadingSpinner';
+import { getStatusBadge } from '../../../utils/statusBadge';
 import { getAllCollections, approveCollection, rejectCollection } from '../../../utils/api';
 
 // Map API collection to UI shape
@@ -61,6 +65,8 @@ const CollectionDataManagement = () => {
 
   const [selectedCollection, setSelectedCollection] = useState(null);
   const [editingCollection, setEditingCollection] = useState(null);
+  const [rejectTarget, setRejectTarget] = useState(null); // { id, reason }
+
 
   // Get unique theaters and movies for filters
   const uniqueTheaters = [...new Set(collections.map(c => c.theater))];
@@ -223,9 +229,8 @@ const CollectionDataManagement = () => {
           </div>
         )}
         {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Icon name="Loader2" size={28} className="animate-spin text-muted-foreground mr-3" />
-            <span className="text-muted-foreground">Loading collections...</span>
+          <div className="flex justify-center py-16">
+            <LoadingSpinner label="Loading collections…" />
           </div>
         ) : activeTab === 'view' && (
           <div className="space-y-6">
@@ -295,20 +300,12 @@ const CollectionDataManagement = () => {
 
             {/* Export Buttons */}
             <div className="flex gap-3">
-              <button
-                onClick={exportToExcel}
-                className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded-md font-medium transition-colors"
-              >
-                <Icon name="Download" size={16} />
-                Export to Excel
-              </button>
-              <button
-                onClick={exportToPDF}
-                className="flex items-center gap-2 bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded-md font-medium transition-colors"
-              >
-                <Icon name="FileText" size={16} />
-                Export to PDF
-              </button>
+              <Button variant="outline" onClick={exportToExcel} iconName="Download" iconPosition="left">
+                Export CSV
+              </Button>
+              <Button variant="outline" onClick={exportToPDF} iconName="FileText" iconPosition="left">
+                Export PDF
+              </Button>
             </div>
 
             {/* Collections Table */}
@@ -340,38 +337,18 @@ const CollectionDataManagement = () => {
                         <td className="py-3 px-4">₹{collection.totalCollection.toLocaleString()}</td>
                         <td className="py-3 px-4">{avgOccupancy}%</td>
                         <td className="py-3 px-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            collection.status === 'approved' ? 'bg-green-100 text-green-800' :
-                            collection.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            collection.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
+                          <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium border ${getStatusBadge(collection.status)}`}>
                             {collection.status}
                           </span>
                         </td>
                         <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => setSelectedCollection(collection)}
-                              className="text-blue-600 hover:text-blue-800"
-                              title="View Details"
-                            >
-                              <Icon name="Eye" size={16} />
-                            </button>
-                            <button
-                              onClick={() => handleEditCollection(collection)}
-                              className="text-green-600 hover:text-green-800"
-                              title="Edit"
-                            >
-                              <Icon name="Edit" size={16} />
-                            </button>
-                            <button
-                              onClick={() => handleArchiveCollection(collection.id)}
-                              className="text-red-600 hover:text-red-800"
-                              title="Archive"
-                            >
-                              <Icon name="Archive" size={16} />
-                            </button>
+                          <div className="flex items-center gap-1">
+                            <Button size="sm" variant="ghost" onClick={() => setSelectedCollection(collection)} title="View Details">
+                              <Icon name="Eye" size={14} />
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => handleArchiveCollection(collection.id)} title="Archive">
+                              <Icon name="Archive" size={14} />
+                            </Button>
                           </div>
                         </td>
                       </tr>
@@ -483,25 +460,26 @@ const CollectionDataManagement = () => {
                     <p className="text-xs text-muted-foreground mt-0.5">Submitted by: {collection.submittedBy}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
+                    <Button
+                      size="sm"
                       disabled={actionLoading === collection.id}
+                      loading={actionLoading === collection.id}
                       onClick={() => handleApproval(collection.id, 'approve')}
-                      className="flex items-center gap-1 bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 px-3 py-1.5 rounded text-sm font-medium"
+                      iconName="Check"
+                      iconPosition="left"
                     >
-                      {actionLoading === collection.id ? <Icon name="Loader2" size={13} className="animate-spin" /> : <Icon name="Check" size={13} />}
                       Approve
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
                       disabled={actionLoading === collection.id}
-                      onClick={() => {
-                        const reason = prompt('Enter rejection reason (required):');
-                        if (reason) handleApproval(collection.id, 'reject', reason);
-                      }}
-                      className="flex items-center gap-1 bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 px-3 py-1.5 rounded text-sm font-medium"
+                      onClick={() => setRejectTarget({ id: collection.id, reason: '' })}
+                      iconName="X"
+                      iconPosition="left"
                     >
-                      {actionLoading === collection.id ? <Icon name="Loader2" size={13} className="animate-spin" /> : <Icon name="X" size={13} />}
                       Reject
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -532,46 +510,73 @@ const CollectionDataManagement = () => {
       </div>
 
       {/* Collection Details Modal */}
-      {selectedCollection && activeTab === 'view' && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-card border border-border rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-foreground">Collection Details</h3>
-                <button
-                  onClick={() => setSelectedCollection(null)}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <Icon name="X" size={20} />
-                </button>
+      <Modal
+        isOpen={!!selectedCollection && activeTab === 'view'}
+        onClose={() => setSelectedCollection(null)}
+        title="Collection Details"
+        size="md"
+      >
+        {selectedCollection && (
+          <div className="p-6 space-y-4 text-sm">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <p><strong>Theater:</strong> {selectedCollection.theater}</p>
+                <p><strong>Movie:</strong> {selectedCollection.movie}</p>
+                <p><strong>Date:</strong> {selectedCollection.date}</p>
+                <p><strong>Submitted by:</strong> {selectedCollection.submittedBy}</p>
               </div>
-              
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p><strong>ID:</strong> {selectedCollection.id}</p>
-                    <p><strong>Theater:</strong> {selectedCollection.theater}</p>
-                    <p><strong>Movie:</strong> {selectedCollection.movie}</p>
-                    <p><strong>Date:</strong> {selectedCollection.date}</p>
-                  </div>
-                  <div>
-                    <p><strong>Total:</strong> ₹{selectedCollection.totalCollection.toLocaleString()}</p>
-                    <p><strong>Net:</strong> ₹{selectedCollection.netCollection.toLocaleString()}</p>
-                    <p><strong>Status:</strong> {selectedCollection.status}</p>
-                    <p><strong>Submitted:</strong> {new Date(selectedCollection.submittedAt).toLocaleString()}</p>
-                  </div>
-                </div>
-                
-                {selectedCollection.notes && (
-                  <div className="bg-muted/30 p-3 rounded">
-                    <strong>Notes:</strong> {selectedCollection.notes}
-                  </div>
-                )}
+              <div className="space-y-1">
+                <p><strong>Gross:</strong> ₹{(selectedCollection.totalCollection || 0).toLocaleString('en-IN')}</p>
+                <p><strong>Net:</strong> ₹{(selectedCollection.netCollection || 0).toLocaleString('en-IN')}</p>
+                <p><strong>Status:</strong> <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium border ${getStatusBadge(selectedCollection.status)}`}>{selectedCollection.status}</span></p>
               </div>
             </div>
+            {selectedCollection.notes && (
+              <div className="bg-muted/30 p-3 rounded">
+                <strong>Notes:</strong> {selectedCollection.notes}
+              </div>
+            )}
+            <div className="flex justify-end pt-2">
+              <Button variant="outline" onClick={() => setSelectedCollection(null)}>Close</Button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
+
+      {/* Reject Reason Modal */}
+      <Modal
+        isOpen={!!rejectTarget}
+        onClose={() => setRejectTarget(null)}
+        title="Reject Collection"
+        size="sm"
+      >
+        {rejectTarget && (
+          <div className="p-6 space-y-4">
+            <p className="text-sm text-muted-foreground">Provide a reason for rejecting this collection. This will be shown to the exhibitor.</p>
+            <textarea
+              className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-destructive"
+              rows={3}
+              placeholder="Enter rejection reason…"
+              value={rejectTarget.reason}
+              onChange={(e) => setRejectTarget((p) => ({ ...p, reason: e.target.value }))}
+            />
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" onClick={() => setRejectTarget(null)}>Cancel</Button>
+              <Button
+                variant="destructive"
+                disabled={!rejectTarget.reason.trim() || actionLoading === rejectTarget.id}
+                loading={actionLoading === rejectTarget.id}
+                onClick={async () => {
+                  await handleApproval(rejectTarget.id, 'reject', rejectTarget.reason);
+                  setRejectTarget(null);
+                }}
+              >
+                Confirm Reject
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

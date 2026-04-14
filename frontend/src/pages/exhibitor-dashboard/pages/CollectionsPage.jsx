@@ -1,20 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { 
+import {
   selectFilteredSubmissions,
   selectSubmissionsFilter,
   selectPendingSubmissions,
   selectApprovedSubmissions,
   selectRejectedSubmissions,
   setFilter,
-  bulkSubmit,
-  addSubmission
+  setSubmissions,
 } from '../../../store/exhibitorCollectionsSlice';
 import { selectScheduleForWeek, selectSelectedWeek } from '../../../store/exhibitorScheduleSlice';
 import RoleBasedNavigation from '../../../components/ui/RoleBasedNavigation';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Icon from '../../../components/AppIcon';
+import LoadingSpinner from '../../../components/shared/LoadingSpinner';
+import { submitCollection, getMyCollections } from '../../../utils/api';
 
 const CollectionsPage = () => {
   const dispatch = useDispatch();
@@ -28,6 +29,21 @@ const CollectionsPage = () => {
 
   const [selectedShows, setSelectedShows] = useState([]);
   const [showBulkSubmit, setShowBulkSubmit] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+
+  // Load existing submissions from API on mount
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await getMyCollections({ limit: 100 });
+        dispatch(setSubmissions(Array.isArray(data) ? data : (data.collections || [])));
+      } catch {
+        // non-blocking — show empty list
+      }
+    };
+    load();
+  }, [dispatch]);
 
   // Get completed shows from current week that haven't been submitted
   const getSubmittableShows = () => {
@@ -53,30 +69,67 @@ const CollectionsPage = () => {
     dispatch(setFilter(newFilter));
   };
 
-  const handleBulkSubmit = () => {
+  const handleBulkSubmit = async () => {
     if (selectedShows.length === 0) return;
+    setSubmitting(true);
+    setSubmitError(null);
 
     const showsData = selectedShows.map(showId => {
       const show = submittableShows.find(s => s.id === showId);
-      return {
-        movieId: show.movieId,
-        movieTitle: show.movieTitle,
-        date: show.date,
-        showNumber: show.showNumber,
-        showTime: show.showTime,
-        totalSeats: show.totalSeats,
-        occupiedSeats: show.occupiedSeats,
-        ticketPrice: show.ticketPrice,
-        grossCollection: show.grossCollection,
-        acCharge: show.acCharge,
-        netCollection: show.netCollection,
-        notes: show.notes || ''
-      };
+      return show;
+    }).filter(Boolean);
+
+    // Group by date — submit one DailyCollection per date
+    const byDate = {};
+    showsData.forEach(show => {
+      if (!byDate[show.date]) byDate[show.date] = [];
+      byDate[show.date].push(show);
     });
 
-    dispatch(bulkSubmit({ showsData }));
-    setSelectedShows([]);
-    setShowBulkSubmit(false);
+    try {
+      for (const [date, shows] of Object.entries(byDate)) {
+        const showMap = {};
+        const showNames = ['matinee', 'afternoon', 'first_show', 'second_show', 'extra_1', 'extra_2'];
+        shows.forEach((show, idx) => {
+          const name = showNames[show.showNumber - 1] || showNames[idx];
+          showMap[name] = {
+            collection: show.grossCollection || 0,
+            occupancy: show.occupiedSeats && show.totalSeats
+              ? Math.round((show.occupiedSeats / show.totalSeats) * 100) : 0,
+            ticket_rate: show.ticketPrice || 0,
+            count: show.occupiedSeats || 0,
+          };
+        });
+
+        const totalCollection = shows.reduce((s, sh) => s + (sh.grossCollection || 0), 0);
+        const totalOccupancy = shows.reduce((s, sh) => {
+          return s + (sh.occupiedSeats && sh.totalSeats ? (sh.occupiedSeats / sh.totalSeats) * 100 : 0);
+        }, 0);
+
+        await submitCollection({
+          movie_id: shows[0].movieId,
+          date,
+          day_name: new Date(date).toLocaleDateString('en-IN', { weekday: 'long' }),
+          shows: showMap,
+          totals: {
+            collection: totalCollection,
+            occupancy_avg: Math.round(totalOccupancy / shows.length),
+            total_shows: shows.length,
+          },
+          net_collection: totalCollection,
+        });
+      }
+
+      // Reload from API after submit
+      const data = await getMyCollections({ limit: 100 });
+      dispatch(setSubmissions(Array.isArray(data) ? data : (data.collections || [])));
+      setSelectedShows([]);
+      setShowBulkSubmit(false);
+    } catch (err) {
+      setSubmitError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const toggleShowSelection = (showId) => {
@@ -103,7 +156,7 @@ const CollectionsPage = () => {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary rounded-lg flex items-center justify-center">
               <Icon name="FileText" size={24} className="text-white" />
             </div>
             <div>
@@ -178,7 +231,7 @@ const CollectionsPage = () => {
                     <Button variant="outline" onClick={clearSelection}>
                       Clear Selection
                     </Button>
-                    <Button onClick={handleBulkSubmit} className="bg-teal-600 hover:bg-teal-700">
+                    <Button onClick={handleBulkSubmit} className="bg-primary hover:bg-primary/80">
                       <Icon name="Upload" size={16} className="mr-2" />
                       Submit {selectedShows.length} Shows
                     </Button>
@@ -199,7 +252,7 @@ const CollectionsPage = () => {
                   className={`
                     border border-border rounded-lg p-4 cursor-pointer transition-all
                     ${selectedShows.includes(show.id) 
-                      ? 'bg-teal-50 border-teal-300' 
+                      ? 'bg-primary/5 border-primary/30' 
                       : 'bg-background hover:bg-muted/20'
                     }
                   `}
@@ -210,7 +263,7 @@ const CollectionsPage = () => {
                       type="checkbox"
                       checked={selectedShows.includes(show.id)}
                       onChange={() => toggleShowSelection(show.id)}
-                      className="w-5 h-5 text-teal-600 border-2 border-border rounded focus:ring-teal-500"
+                      className="w-5 h-5 text-primary border-2 border-border rounded focus:ring-primary"
                     />
                     
                     <div className="flex-1">

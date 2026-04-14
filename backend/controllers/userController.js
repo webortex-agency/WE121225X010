@@ -160,4 +160,37 @@ const getMe = async (req, res) => {
   }
 };
 
-module.exports = { getUsers, getUserById, createUser, updateUser, toggleUserStatus, resetPassword, getMe };
+// @desc    Update current user's own profile (name, email, preferences)
+// @route   PUT /api/users/me
+// @access  Private (any authenticated user)
+const updateMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const { name, email, preferences } = req.body;
+
+    // Only allow updating safe fields — role/status changes still require admin
+    if (name) user.name = name;
+    if (email) {
+      // Ensure email uniqueness
+      const exists = await User.findOne({ email, _id: { $ne: user._id } });
+      if (exists) return res.status(400).json({ message: 'Email already in use by another account' });
+      user.email = email;
+    }
+    if (preferences) user.preferences = { ...user.preferences, ...preferences };
+
+    const updated = await user.save();
+    res.json({
+      _id: updated._id,
+      name: updated.name,
+      email: updated.email,
+      role: updated.role,
+      preferences: updated.preferences,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+module.exports = { getUsers, getUserById, createUser, updateUser, updateMe, toggleUserStatus, resetPassword, getMe };

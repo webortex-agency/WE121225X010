@@ -9,6 +9,7 @@ const initialState = {
     weekNumber: 1
   },
   showsPerDay: 4, // Default 4 shows active, can extend to 6
+  extraShowsByDate: {}, // Per-day override: { 'YYYY-MM-DD': number }
   termsAndConditionsAccepted: false,
   tourCompleted: false,
   loading: false,
@@ -96,9 +97,9 @@ const exhibitorScheduleSlice = createSlice({
 
     addExtraShow: (state, action) => {
       const { date } = action.payload;
-      const currentShows = state.schedule[date] ? Object.keys(state.schedule[date]).length : 0;
-      if (currentShows < 6 && state.showsPerDay < 6) { // Maximum 6 shows per day
-        state.showsPerDay = Math.min(6, state.showsPerDay + 1);
+      const current = state.extraShowsByDate[date] ?? state.showsPerDay;
+      if (current < 6) {
+        state.extraShowsByDate[date] = current + 1;
       }
     },
 
@@ -108,6 +109,7 @@ const exhibitorScheduleSlice = createSlice({
         localStorage.setItem('exhibitorSchedule', JSON.stringify(state.schedule));
         localStorage.setItem('exhibitorWeek', JSON.stringify(state.selectedWeek));
         localStorage.setItem('exhibitorShowsPerDay', state.showsPerDay.toString());
+        localStorage.setItem('exhibitorExtraShowsByDate', JSON.stringify(state.extraShowsByDate));
       } catch (error) {
         console.error('Failed to save schedule to localStorage:', error);
       }
@@ -119,7 +121,8 @@ const exhibitorScheduleSlice = createSlice({
         const savedSchedule = localStorage.getItem('exhibitorSchedule');
         const savedWeek = localStorage.getItem('exhibitorWeek');
         const savedShowsPerDay = localStorage.getItem('exhibitorShowsPerDay');
-        
+        const savedExtraShowsByDate = localStorage.getItem('exhibitorExtraShowsByDate');
+
         if (savedSchedule) {
           state.schedule = JSON.parse(savedSchedule);
         }
@@ -128,6 +131,9 @@ const exhibitorScheduleSlice = createSlice({
         }
         if (savedShowsPerDay) {
           state.showsPerDay = parseInt(savedShowsPerDay, 10);
+        }
+        if (savedExtraShowsByDate) {
+          state.extraShowsByDate = JSON.parse(savedExtraShowsByDate);
         }
       } catch (error) {
         console.error('Failed to load schedule from localStorage:', error);
@@ -375,8 +381,11 @@ export const selectTourCompleted = (state) =>
 export const selectSelectedWeek = (state) => 
   state.exhibitorSchedule.selectedWeek;
 
-export const selectShowsPerDay = (state) => 
+export const selectShowsPerDay = (state) =>
   state.exhibitorSchedule.showsPerDay;
+
+export const selectExtraShowsByDate = (state) =>
+  state.exhibitorSchedule.extraShowsByDate;
 
 export const selectScheduleLoading = (state) => 
   state.exhibitorSchedule.loading;

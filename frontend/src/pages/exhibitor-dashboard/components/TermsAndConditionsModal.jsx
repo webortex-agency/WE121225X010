@@ -45,7 +45,7 @@ const TermsAndConditionsModal = ({ isOpen, onAccept, onDecline }) => {
               Please read and accept the terms to continue using the exhibitor portal
             </p>
           </div>
-          <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-full flex items-center justify-center">
+          <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary rounded-full flex items-center justify-center">
             <Icon name="FileText" size={24} className="text-white" />
           </div>
         </div>
@@ -59,7 +59,7 @@ const TermsAndConditionsModal = ({ isOpen, onAccept, onDecline }) => {
           {/* Section 1: Movie Distribution Agreement */}
           <section>
             <h3 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Icon name="Film" size={20} className="text-teal-600" />
+              <Icon name="Film" size={20} className="text-primary" />
               Movie Distribution Agreement
             </h3>
             <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
@@ -85,7 +85,7 @@ const TermsAndConditionsModal = ({ isOpen, onAccept, onDecline }) => {
           {/* Section 2: Collection Submission Policy */}
           <section>
             <h3 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Icon name="IndianRupee" size={20} className="text-teal-600" />
+              <Icon name="IndianRupee" size={20} className="text-primary" />
               Collection Submission Policy
             </h3>
             <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
@@ -109,7 +109,7 @@ const TermsAndConditionsModal = ({ isOpen, onAccept, onDecline }) => {
           {/* Section 3: Show Scheduling Requirements */}
           <section>
             <h3 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Icon name="Calendar" size={20} className="text-teal-600" />
+              <Icon name="Calendar" size={20} className="text-primary" />
               Show Scheduling Requirements
             </h3>
             <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
@@ -133,7 +133,7 @@ const TermsAndConditionsModal = ({ isOpen, onAccept, onDecline }) => {
           {/* Section 4: Payment Terms */}
           <section>
             <h3 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Icon name="CreditCard" size={20} className="text-teal-600" />
+              <Icon name="CreditCard" size={20} className="text-primary" />
               Payment Terms and Settlement
             </h3>
             <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
@@ -157,7 +157,7 @@ const TermsAndConditionsModal = ({ isOpen, onAccept, onDecline }) => {
           {/* Section 5: Data Privacy and Security */}
           <section>
             <h3 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Icon name="Shield" size={20} className="text-teal-600" />
+              <Icon name="Shield" size={20} className="text-primary" />
               Data Privacy and Security
             </h3>
             <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
@@ -181,7 +181,7 @@ const TermsAndConditionsModal = ({ isOpen, onAccept, onDecline }) => {
           {/* Section 6: System Usage Guidelines */}
           <section>
             <h3 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Icon name="Monitor" size={20} className="text-teal-600" />
+              <Icon name="Monitor" size={20} className="text-primary" />
               System Usage Guidelines
             </h3>
             <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
@@ -227,7 +227,7 @@ const TermsAndConditionsModal = ({ isOpen, onAccept, onDecline }) => {
                 type="checkbox"
                 checked={isChecked}
                 onChange={(e) => setIsChecked(e.target.checked)}
-                className="w-5 h-5 text-teal-600 border-2 border-border rounded focus:ring-teal-500"
+                className="w-5 h-5 text-primary border-2 border-border rounded focus:ring-primary"
               />
               <span className="text-sm font-medium text-foreground">
                 I have read and agree to all the terms and conditions stated above
@@ -254,7 +254,7 @@ const TermsAndConditionsModal = ({ isOpen, onAccept, onDecline }) => {
             <Button
               onClick={handleAccept}
               disabled={!canAccept}
-              className="flex-1 bg-teal-600 hover:bg-teal-700 disabled:bg-gray-400"
+              className="flex-1 bg-primary hover:bg-primary/80 disabled:bg-gray-400"
             >
               <Icon name="Check" size={16} className="mr-2" />
               Accept & Continue

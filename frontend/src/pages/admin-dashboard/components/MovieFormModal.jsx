@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { addMovie, updateMovie } from '../../../store/moviesSlice';
+import { createMovieThunk, updateMovieThunk } from '../../../store/moviesSlice';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import { Checkbox } from '../../../components/ui/Checkbox';
+import Modal from '../../../components/shared/Modal';
 import Icon from '../../../components/AppIcon';
+import { uploadPoster } from '../../../utils/api';
 
 const MovieFormModal = ({ movie, onClose }) => {
   const dispatch = useDispatch();
@@ -24,6 +26,8 @@ const MovieFormModal = ({ movie, onClose }) => {
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [posterFile, setPosterFile] = useState(null);
+  const [posterPreview, setPosterPreview] = useState(movie?.poster_url || null);
 
   const genreOptions = [
     'Action', 'Drama', 'Comedy', 'Thriller', 'Romance', 'Horror',
@@ -122,17 +126,27 @@ const MovieFormModal = ({ movie, onClose }) => {
 
     try {
       const movieData = {
-        ...formData,
+        title: formData.title,
+        release_date: formData.releaseDate,
+        genre: formData.genres[0] || '',
+        genres: formData.genres,
+        description: formData.description,
+        status: formData.status,
         budget: Number(formData.budget),
         duration: Number(formData.duration),
-        exhibitorCount: movie?.exhibitorCount || 0,
-        totalCollections: movie?.totalCollections || 0
+        language: formData.language || '',
+        revenue_sharing: { distributor_percent: formData.distributor_percent ?? 60 },
       };
 
       if (isEditing) {
-        dispatch(updateMovie({ ...movieData, id: movie.id }));
+        const movieId = movie._id || movie.id;
+        await dispatch(updateMovieThunk({ id: movieId, data: movieData })).unwrap();
+        // Upload poster if a new file was selected
+        if (posterFile) {
+          await uploadPoster(movieId, posterFile);
+        }
       } else {
-        dispatch(addMovie(movieData));
+        await dispatch(createMovieThunk(movieData)).unwrap();
       }
 
       onClose();
@@ -144,21 +158,7 @@ const MovieFormModal = ({ movie, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-      <div className="bg-card border border-border rounded-lg shadow-lg w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-xl font-semibold text-foreground">
-            {isEditing ? 'Edit Movie' : 'Add New Movie'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-muted rounded-md transition-colors"
-          >
-            <Icon name="X" size={20} />
-          </button>
-        </div>
-
+    <Modal isOpen onClose={onClose} title={isEditing ? 'Edit Movie' : 'Add New Movie'} size="md">
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Basic Information */}
@@ -257,16 +257,36 @@ const MovieFormModal = ({ movie, onClose }) => {
               />
             </div>
 
-            <Input
-              label="Poster Image URL"
-              name="posterUrl"
-              type="url"
-              value={formData.posterUrl}
-              onChange={handleInputChange}
-              error={errors.posterUrl}
-              placeholder="Enter poster image URL (optional)"
-              disabled={isSubmitting}
-            />
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                {isEditing ? 'Poster Image' : 'Poster Image (upload after saving)'}
+              </label>
+              {isEditing ? (
+                <div className="flex items-start gap-4">
+                  {posterPreview && (
+                    <img src={posterPreview} alt="Poster" className="w-16 h-24 object-cover rounded border border-border" />
+                  )}
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      disabled={isSubmitting}
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          setPosterFile(file);
+                          setPosterPreview(URL.createObjectURL(file));
+                        }
+                      }}
+                      className="block w-full text-sm text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:border file:border-border file:rounded file:text-sm file:cursor-pointer file:bg-muted hover:file:bg-muted/70"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">JPG, PNG or WebP — max 5 MB</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">Save the movie first, then upload the poster from the edit form.</p>
+              )}
+            </div>
           </div>
 
           {/* Revenue Sharing */}
@@ -334,17 +354,16 @@ const MovieFormModal = ({ movie, onClose }) => {
               loading={isSubmitting}
               iconName={isEditing ? "Save" : "Plus"}
               iconPosition="left"
-              className="flex-1 bg-teal-600 hover:bg-teal-700"
+              className="flex-1"
             >
-              {isSubmitting 
-                ? (isEditing ? 'Updating...' : 'Adding...') 
+              {isSubmitting
+                ? (isEditing ? 'Updating...' : 'Adding...')
                 : (isEditing ? 'Update Movie' : 'Add Movie')
               }
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 };
 

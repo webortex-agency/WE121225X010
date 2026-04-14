@@ -65,7 +65,7 @@ const MovieListSidebar = () => {
       {/* Header */}
       <div className="p-6 border-b border-border">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center">
+          <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary rounded-lg flex items-center justify-center">
             <Icon name="Film" size={20} className="text-white" />
           </div>
           <div>
@@ -82,7 +82,7 @@ const MovieListSidebar = () => {
             placeholder="Search movies..."
             value={searchFilter}
             onChange={handleSearchChange}
-            className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
           />
         </div>
       </div>
@@ -201,8 +201,8 @@ const MovieCard = ({ movie, onDragStart, onDragEnd, isDragging, disabled = false
       onDragEnd={onDragEnd}
       className={`
         p-3 border border-border rounded-lg bg-background transition-all duration-200
-        ${!disabled ? 'cursor-grab hover:shadow-md hover:border-teal-300' : 'cursor-not-allowed opacity-60'}
-        ${isDragging ? 'shadow-lg scale-105 border-teal-400' : ''}
+        ${!disabled ? 'cursor-grab hover:shadow-md hover:border-primary/30' : 'cursor-not-allowed opacity-60'}
+        ${isDragging ? 'shadow-lg scale-105 border-primary/40' : ''}
         ${disabled ? 'bg-muted/50' : ''}
       `}
     >

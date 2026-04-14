@@ -41,15 +41,15 @@ const ScheduleSummary = () => {
       label: 'Est. Gross',
       value: `₹${estimatedGross.toLocaleString()}`,
       icon: 'IndianRupee',
-      color: 'text-teal-600',
-      bgColor: 'bg-teal-100'
+      color: 'text-primary',
+      bgColor: 'bg-primary/10'
     }
   ];
 
   return (
     <div className="bg-card border border-border rounded-lg p-6 tour-schedule-summary w-full">
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center">
+        <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary rounded-lg flex items-center justify-center">
           <Icon name="BarChart3" size={20} className="text-white" />
         </div>
         <div>
@@ -85,7 +85,7 @@ const ScheduleSummary = () => {
           </div>
           <div className="w-full bg-muted rounded-full h-2">
             <div 
-              className="bg-gradient-to-r from-teal-500 to-teal-600 h-2 rounded-full transition-all duration-300"
+              className="bg-gradient-to-r from-primary to-primary h-2 rounded-full transition-all duration-300"
               style={{ width: `${completionPercentage}%` }}
             />
           </div>

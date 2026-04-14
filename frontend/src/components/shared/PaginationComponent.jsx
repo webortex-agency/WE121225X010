@@ -78,7 +78,7 @@ const PaginationComponent = ({
                 onClick={() => onPageChange(page)}
                 className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
                   currentPage === page
-                    ? 'bg-teal-600 text-white'
+                    ? 'bg-primary text-white'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
               >

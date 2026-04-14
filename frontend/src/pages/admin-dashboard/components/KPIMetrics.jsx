@@ -62,7 +62,7 @@ const KPIMetrics = ({ metrics, loading = false }) => {
       change: '+8% vs last period',
       changeType: 'positive',
       icon: 'TrendingUp',
-      iconColor: 'bg-teal-600'
+      iconColor: 'bg-primary'
     }
   ];
 

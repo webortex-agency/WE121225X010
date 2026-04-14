@@ -1,9 +1,48 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import * as api from '../utils/api';
+
+// ── Async Thunks ─────────────────────────────────────────────────────────────
+
+export const fetchMovies = createAsyncThunk('movies/fetchAll', async (_, { rejectWithValue }) => {
+  try {
+    return await api.getMovies();
+  } catch (err) {
+    return rejectWithValue(err.message);
+  }
+});
+
+export const createMovieThunk = createAsyncThunk('movies/create', async (data, { rejectWithValue }) => {
+  try {
+    return await api.createMovie(data);
+  } catch (err) {
+    return rejectWithValue(err.message);
+  }
+});
+
+export const updateMovieThunk = createAsyncThunk('movies/update', async ({ id, data }, { rejectWithValue }) => {
+  try {
+    return await api.updateMovie(id, data);
+  } catch (err) {
+    return rejectWithValue(err.message);
+  }
+});
+
+export const deleteMovieThunk = createAsyncThunk('movies/delete', async (id, { rejectWithValue }) => {
+  try {
+    await api.deleteMovie(id);
+    return id;
+  } catch (err) {
+    return rejectWithValue(err.message);
+  }
+});
+
+// ── Slice ─────────────────────────────────────────────────────────────────────
 
 const initialState = {
   movies: [],
   selectedMovie: null,
   loading: false,
+  error: null,
   filter: {
     status: 'all',
     genre: [],
@@ -18,22 +57,6 @@ const moviesSlice = createSlice({
     setMovies: (state, action) => {
       state.movies = action.payload;
     },
-    addMovie: (state, action) => {
-      state.movies.push({
-        ...action.payload,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString()
-      });
-    },
-    updateMovie: (state, action) => {
-      const index = state.movies.findIndex(movie => movie.id === action.payload.id);
-      if (index !== -1) {
-        state.movies[index] = { ...state.movies[index], ...action.payload };
-      }
-    },
-    deleteMovie: (state, action) => {
-      state.movies = state.movies.filter(movie => movie.id !== action.payload);
-    },
     setSelectedMovie: (state, action) => {
       state.selectedMovie = action.payload;
     },
@@ -42,54 +65,97 @@ const moviesSlice = createSlice({
     },
     setLoading: (state, action) => {
       state.loading = action.payload;
+    },
+    clearError: (state) => {
+      state.error = null;
     }
+  },
+  extraReducers: (builder) => {
+    // fetchMovies
+    builder
+      .addCase(fetchMovies.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(fetchMovies.fulfilled, (state, action) => {
+        state.loading = false;
+        // Backend returns array or { movies: [] }
+        state.movies = Array.isArray(action.payload) ? action.payload : (action.payload.movies || []);
+      })
+      .addCase(fetchMovies.rejected, (state, action) => { state.loading = false; state.error = action.payload; });
+
+    // createMovieThunk
+    builder
+      .addCase(createMovieThunk.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(createMovieThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.movies.push(action.payload);
+      })
+      .addCase(createMovieThunk.rejected, (state, action) => { state.loading = false; state.error = action.payload; });
+
+    // updateMovieThunk
+    builder
+      .addCase(updateMovieThunk.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(updateMovieThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        const idx = state.movies.findIndex(m => m._id === action.payload._id);
+        if (idx !== -1) state.movies[idx] = action.payload;
+      })
+      .addCase(updateMovieThunk.rejected, (state, action) => { state.loading = false; state.error = action.payload; });
+
+    // deleteMovieThunk
+    builder
+      .addCase(deleteMovieThunk.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(deleteMovieThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.movies = state.movies.filter(m => m._id !== action.payload);
+      })
+      .addCase(deleteMovieThunk.rejected, (state, action) => { state.loading = false; state.error = action.payload; });
   }
 });
 
 export const {
   setMovies,
-  addMovie,
-  updateMovie,
-  deleteMovie,
   setSelectedMovie,
   setFilter,
-  setLoading
+  setLoading,
+  clearError
 } = moviesSlice.actions;
+
+// Keep legacy sync actions as aliases so existing callers don't break
+export const addMovie = createMovieThunk;
+export const updateMovie = updateMovieThunk;
+export const deleteMovie = deleteMovieThunk;
 
 // Selectors
 export const selectAllMovies = (state) => state.movies.movies;
-export const selectActiveMovies = (state) => 
+export const selectActiveMovies = (state) =>
   state.movies.movies.filter(movie => movie.status === 'active');
-export const selectMovieById = (state, movieId) => 
-  state.movies.movies.find(movie => movie.id === movieId);
+export const selectMovieById = (state, movieId) =>
+  state.movies.movies.find(movie => movie._id === movieId || movie.id === movieId);
 export const selectFilteredMovies = (state) => {
   const { movies, filter } = state.movies;
   let filtered = movies;
 
-  // Filter by status
   if (filter.status !== 'all') {
     filtered = filtered.filter(movie => movie.status === filter.status);
   }
 
-  // Filter by genre
-  if (filter.genre.length > 0) {
-    filtered = filtered.filter(movie => 
-      movie.genres.some(genre => filter.genre.includes(genre))
+  if (filter.genre && filter.genre.length > 0) {
+    filtered = filtered.filter(movie =>
+      (movie.genres || [movie.genre]).some(g => filter.genre.includes(g))
     );
   }
 
-  // Filter by search
   if (filter.search) {
     const searchLower = filter.search.toLowerCase();
-    filtered = filtered.filter(movie => 
-      movie.title.toLowerCase().includes(searchLower) ||
-      movie.genres.some(genre => genre.toLowerCase().includes(searchLower))
+    filtered = filtered.filter(movie =>
+      (movie.title || '').toLowerCase().includes(searchLower) ||
+      (movie.genres || [movie.genre]).some(g => (g || '').toLowerCase().includes(searchLower))
     );
   }
 
   return filtered;
 };
 export const selectMoviesLoading = (state) => state.movies.loading;
+export const selectMoviesError = (state) => state.movies.error;
 export const selectSelectedMovie = (state) => state.movies.selectedMovie;
 export const selectMoviesFilter = (state) => state.movies.filter;
 

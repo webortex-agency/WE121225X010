@@ -37,7 +37,7 @@ const FilterChips = ({
             onClick={() => handleChipClick(value)}
             className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
               isSelected(value)
-                ? 'bg-teal-600 text-white border border-teal-600'
+                ? 'bg-primary text-white border border-primary'
                 : 'bg-muted text-muted-foreground hover:bg-muted/80 border border-border'
             }`}
           >

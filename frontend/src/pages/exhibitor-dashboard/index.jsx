@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import './styles/responsive.css';
-import { 
+import {
   selectTermsAndConditionsAccepted,
   selectTourCompleted,
+  selectSelectedWeek,
   setSelectedWeek,
   getCurrentWeek,
   loadSchedule,
+  saveSchedule,
+  clearWeekSchedule,
+  copyFromPreviousWeek,
   loadUserPreferences
 } from '../../store/exhibitorScheduleSlice';
 import { autoInitializeExhibitor } from '../../utils/initializeExhibitorData';
@@ -22,8 +27,10 @@ import Icon from '../../components/AppIcon';
 
 const ExhibitorDashboard = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const termsAccepted = useSelector(selectTermsAndConditionsAccepted);
   const tourCompleted = useSelector(selectTourCompleted);
+  const selectedWeek = useSelector(selectSelectedWeek);
   
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showTour, setShowTour] = useState(false);
@@ -84,25 +91,32 @@ const ExhibitorDashboard = () => {
   };
 
   const handleSaveSchedule = () => {
-    // This would typically save to backend, but for now we'll use localStorage
-    dispatch(loadSchedule()); // This actually saves to localStorage in our implementation
-    // Show success notification
-    if (window.toast) {
-      window.toast.success('Schedule saved successfully!');
-    }
+    dispatch(saveSchedule());
   };
 
   const handleClearWeek = () => {
+    if (!selectedWeek.startDate) return;
     if (window.confirm('Are you sure you want to clear all shows for this week? This action cannot be undone.')) {
-      // Implementation would go here
-      console.log('Clear week functionality to be implemented');
+      dispatch(clearWeekSchedule({ startDate: selectedWeek.startDate, endDate: selectedWeek.endDate }));
+      dispatch(saveSchedule());
     }
   };
 
   const handleCopyFromPreviousWeek = () => {
+    if (!selectedWeek.startDate) return;
     if (window.confirm('This will copy all shows from the previous week. Continue?')) {
-      // Implementation would go here
-      console.log('Copy from previous week functionality to be implemented');
+      const currStart = new Date(selectedWeek.startDate);
+      const prevStart = new Date(currStart);
+      prevStart.setDate(currStart.getDate() - 7);
+      const prevEnd = new Date(selectedWeek.endDate);
+      prevEnd.setDate(new Date(selectedWeek.endDate).getDate() - 7);
+
+      const previousWeek = {
+        startDate: prevStart.toISOString().split('T')[0],
+        endDate: prevEnd.toISOString().split('T')[0],
+      };
+      dispatch(copyFromPreviousWeek({ currentWeek: selectedWeek, previousWeek }));
+      dispatch(saveSchedule());
     }
   };
 
@@ -111,7 +125,7 @@ const ExhibitorDashboard = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Icon name="Loader2" size={48} className="mx-auto text-teal-600 animate-spin mb-4" />
+          <Icon name="Loader2" size={48} className="mx-auto text-primary animate-spin mb-4" />
           <h2 className="text-xl font-semibold text-foreground mb-2">Loading Dashboard</h2>
           <p className="text-muted-foreground">Please wait while we prepare your exhibitor portal...</p>
         </div>
@@ -166,7 +180,7 @@ const ExhibitorDashboard = () => {
 
                 <Button
                   onClick={handleSaveSchedule}
-                  className="bg-teal-600 hover:bg-teal-700 flex-1 lg:flex-none"
+                  className="bg-primary hover:bg-primary/80 flex-1 lg:flex-none"
                   size="sm"
                 >
                   <Icon name="Save" size={16} className="mr-1 lg:mr-2" />
@@ -201,7 +215,7 @@ const ExhibitorDashboard = () => {
                     variant="outline"
                     size="sm"
                     className="w-full justify-start"
-                    onClick={() => window.location.href = '/exhibitor/collections'}
+                    onClick={() => navigate('/exhibitor/collections')}
                   >
                     <Icon name="FileText" size={16} className="mr-2" />
                     Submit Collections
@@ -211,7 +225,7 @@ const ExhibitorDashboard = () => {
                     variant="outline"
                     size="sm"
                     className="w-full justify-start"
-                    onClick={() => window.location.href = '/exhibitor/ledger'}
+                    onClick={() => navigate('/exhibitor/ledger')}
                   >
                     <Icon name="BookOpen" size={16} className="mr-2" />
                     View Ledger
@@ -221,7 +235,7 @@ const ExhibitorDashboard = () => {
                     variant="outline"
                     size="sm"
                     className="w-full justify-start"
-                    onClick={() => window.location.href = '/exhibitor/profile'}
+                    onClick={() => navigate('/exhibitor/profile')}
                   >
                     <Icon name="Settings" size={16} className="mr-2" />
                     Profile Settings
@@ -230,19 +244,19 @@ const ExhibitorDashboard = () => {
               </div>
 
               {/* Help Section */}
-              <div className="p-4 bg-teal-50 border border-teal-200 rounded-lg">
+              <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <Icon name="HelpCircle" size={16} className="text-teal-600" />
-                  <h4 className="font-medium text-teal-800">Need Help?</h4>
+                  <Icon name="HelpCircle" size={16} className="text-primary" />
+                  <h4 className="font-medium text-primary">Need Help?</h4>
                 </div>
-                <p className="text-sm text-teal-700 mb-3">
+                <p className="text-sm text-primary mb-3">
                   New to the dashboard? Take a quick tour to learn the features.
                 </p>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setShowTour(true)}
-                  className="w-full border-teal-300 text-teal-700 hover:bg-teal-100"
+                  className="w-full border-primary/30 text-primary hover:bg-primary/10"
                 >
                   <Icon name="Play" size={16} className="mr-2" />
                   Start Tour
@@ -260,7 +274,7 @@ const ExhibitorDashboard = () => {
             variant="outline"
             size="sm"
             className="flex flex-col items-center gap-1 h-auto py-2"
-            onClick={() => window.location.href = '/exhibitor/collections'}
+            onClick={() => navigate('/exhibitor/collections')}
           >
             <Icon name="FileText" size={16} />
             <span className="text-xs">Collections</span>
@@ -270,7 +284,7 @@ const ExhibitorDashboard = () => {
             variant="outline"
             size="sm"
             className="flex flex-col items-center gap-1 h-auto py-2"
-            onClick={() => window.location.href = '/exhibitor/ledger'}
+            onClick={() => navigate('/exhibitor/ledger')}
           >
             <Icon name="BookOpen" size={16} />
             <span className="text-xs">Ledger</span>
@@ -280,7 +294,7 @@ const ExhibitorDashboard = () => {
             variant="outline"
             size="sm"
             className="flex flex-col items-center gap-1 h-auto py-2"
-            onClick={() => window.location.href = '/exhibitor/profile'}
+            onClick={() => navigate('/exhibitor/profile')}
           >
             <Icon name="Settings" size={16} />
             <span className="text-xs">Profile</span>

@@ -9,13 +9,13 @@ import Button from '../../../components/ui/Button';
 import Icon from '../../../components/AppIcon';
 import MovieCard from '../components/MovieCard';
 import MovieFormModal from '../components/MovieFormModal';
-import { 
-  selectFilteredMovies, 
-  selectMoviesLoading, 
+import {
+  selectFilteredMovies,
+  selectMoviesLoading,
   selectMoviesFilter,
-  setFilter 
+  setFilter,
+  fetchMovies
 } from '../../../store/moviesSlice';
-import { autoInitialize } from '../../../utils/initializeMockData';
 
 const MoviesManagement = () => {
   const navigate = useNavigate();
@@ -30,10 +30,10 @@ const MoviesManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = viewMode === 'grid' ? 9 : 10;
 
-  // Initialize mock data
+  // Load movies from backend on mount
   useEffect(() => {
-    autoInitialize();
-  }, []);
+    dispatch(fetchMovies());
+  }, [dispatch]);
 
   // Calculate pagination
   const totalPages = Math.ceil(movies.length / itemsPerPage);
@@ -124,7 +124,7 @@ const MoviesManagement = () => {
                 onClick={handleAddMovie}
                 iconName="Plus"
                 iconPosition="left"
-                className="bg-teal-600 hover:bg-teal-700"
+                className="bg-primary hover:bg-primary/80"
               >
                 Add New Movie
               </Button>
@@ -143,7 +143,7 @@ const MoviesManagement = () => {
                     onClick={() => handleStatusFilter(option.value)}
                     className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                       filter.status === option.value
-                        ? 'bg-teal-600 text-white'
+                        ? 'bg-primary text-white'
                         : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     }`}
                   >
@@ -202,7 +202,7 @@ const MoviesManagement = () => {
                   }}
                   className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
                     filter.genre.includes(genre)
-                      ? 'bg-teal-100 text-teal-800 border border-teal-300'
+                      ? 'bg-primary/10 text-primary border border-primary/30'
                       : 'bg-muted text-muted-foreground hover:bg-muted/80'
                   }`}
                 >
@@ -370,7 +370,7 @@ const MoviesManagement = () => {
                       onClick={() => setCurrentPage(page)}
                       className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
                         currentPage === page
-                          ? 'bg-teal-600 text-white'
+                          ? 'bg-primary text-white'
                           : 'text-muted-foreground hover:bg-muted'
                       }`}
                     >

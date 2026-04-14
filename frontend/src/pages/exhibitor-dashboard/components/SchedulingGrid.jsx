@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { 
+import {
   selectSelectedWeek,
   selectScheduleForWeek,
   selectShowsPerDay,
+  selectExtraShowsByDate,
   addMovieToShow,
   removeMovieFromShow,
   updateShowDetails,
@@ -20,6 +21,7 @@ const SchedulingGrid = ({ onShowClick }) => {
   const selectedWeek = useSelector(selectSelectedWeek);
   const weekSchedule = useSelector(state => selectScheduleForWeek(state, selectedWeek));
   const showsPerDay = useSelector(selectShowsPerDay);
+  const extraShowsByDate = useSelector(selectExtraShowsByDate);
   const [dragOverCell, setDragOverCell] = useState(null);
 
   // Generate week dates
@@ -95,14 +97,15 @@ const SchedulingGrid = ({ onShowClick }) => {
   };
 
   const handleAddExtraShow = (date) => {
-    if (showsPerDay < 6) {
+    const activeForDay = extraShowsByDate[date] ?? showsPerDay;
+    if (activeForDay < 6) {
       dispatch(addExtraShow({ date }));
     }
   };
 
   const getMaxShowsForDate = (date) => {
     const currentShows = weekSchedule[date] ? Object.keys(weekSchedule[date]).length : 0;
-    return Math.max(showsPerDay, currentShows);
+    return Math.max(extraShowsByDate[date] ?? showsPerDay, currentShows);
   };
 
   return (
@@ -180,6 +183,7 @@ const SchedulingGrid = ({ onShowClick }) => {
           {/* Schedule Rows - Each Day */}
           {weekDates.map((date) => {
             const maxShows = getMaxShowsForDate(date.dateString);
+            const activeShowsForDay = extraShowsByDate[date.dateString] ?? showsPerDay;
             return (
               <div key={date.dateString} className="grid grid-cols-[200px_repeat(6,1fr)] lg:grid-cols-[200px_repeat(6,1fr)] md:grid-cols-[180px_repeat(6,minmax(140px,1fr))] sm:grid-cols-[150px_repeat(6,minmax(120px,1fr))] border-t border-border overflow-x-auto">
                 {/* Day Column */}
@@ -192,9 +196,9 @@ const SchedulingGrid = ({ onShowClick }) => {
                     variant="outline"
                     size="sm"
                     onClick={() => handleAddExtraShow(date.dateString)}
-                    className={`ml-2 p-1 h-8 w-8 flex-shrink-0 ${showsPerDay >= 6 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    title={showsPerDay >= 6 ? "Maximum shows reached" : "Add Extra Show"}
-                    disabled={showsPerDay >= 6}
+                    className={`ml-2 p-1 h-8 w-8 flex-shrink-0 ${activeShowsForDay >= 6 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    title={activeShowsForDay >= 6 ? "Maximum shows reached" : "Add Extra Show"}
+                    disabled={activeShowsForDay >= 6}
                   >
                     <Icon name="Plus" size={14} />
                   </Button>
@@ -206,8 +210,7 @@ const SchedulingGrid = ({ onShowClick }) => {
                   const cellKey = `${date.dateString}-${showNumber}`;
                   const showData = weekSchedule[date.dateString]?.[`show_${showNumber}`];
                   const isDragOver = dragOverCell === cellKey;
-                  // Shows 1-4 are active by default, shows 5-6 are inactive initially
-                  const isActiveSlot = showNumber <= showsPerDay;
+                  const isActiveSlot = showNumber <= activeShowsForDay;
 
                   return (
                     <div
@@ -215,7 +218,7 @@ const SchedulingGrid = ({ onShowClick }) => {
                       className={`
                         p-2 border-r border-border last:border-r-0 min-h-[100px] min-w-[150px] transition-all duration-200
                         ${!isActiveSlot ? 'bg-gray-50 opacity-50' : ''}
-                        ${isDragOver && isActiveSlot ? 'bg-teal-50 border-teal-300' : 'hover:bg-muted/20'}
+                        ${isDragOver && isActiveSlot ? 'bg-primary/5 border-primary/30' : 'hover:bg-muted/20'}
                         ${showData ? 'cursor-pointer' : 'cursor-default'}
                       `}
                       onDragOver={isActiveSlot ? handleDragOver : undefined}
@@ -250,7 +253,7 @@ const SchedulingGrid = ({ onShowClick }) => {
         {/* Drag & Drop Hint */}
         <div className="mt-4 p-4 bg-muted/30 border border-border rounded-lg tour-drag-drop-hint">
           <div className="flex items-center gap-3">
-            <Icon name="MousePointer" size={20} className="text-teal-600" />
+            <Icon name="MousePointer" size={20} className="text-primary" />
             <div>
               <h3 className="font-medium text-foreground">How to Schedule Movies</h3>
               <p className="text-sm text-muted-foreground mt-1">
@@ -326,8 +329,8 @@ const EmptySlot = ({ isDragOver }) => (
   <div className={`
     h-full flex items-center justify-center border-2 border-dashed rounded transition-all duration-200
     ${isDragOver 
-      ? 'border-teal-400 bg-teal-50 text-teal-600' 
-      : 'border-muted text-muted-foreground hover:border-teal-300 hover:text-teal-600'
+      ? 'border-primary/40 bg-primary/5 text-primary' 
+      : 'border-muted text-muted-foreground hover:border-primary/30 hover:text-primary'
     }
   `}>
     <div className="text-center">

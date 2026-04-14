@@ -1,9 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { selectAllMovies } from '../../../store/moviesSlice';
+import { selectAllExhibitors } from '../../../store/exhibitorsSlice';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Select from '../../../components/ui/Select';
+import { generateStatement } from '../../../utils/api';
 
 const BatchProcessingPanel = ({ onBatchGenerate }) => {
+  const moviesFromStore = useSelector(selectAllMovies);
+  const exhibitorsFromStore = useSelector(selectAllExhibitors);
+
   const [batchConfig, setBatchConfig] = useState({
     movieIds: [],
     exhibitorIds: [],
@@ -14,21 +21,15 @@ const BatchProcessingPanel = ({ onBatchGenerate }) => {
   const [processingQueue, setProcessingQueue] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const movieOptions = [
-    { value: 'MOV-2023-001', label: 'Pathaan' },
-    { value: 'MOV-2023-002', label: 'Jawan' },
-    { value: 'MOV-2023-003', label: 'Dunki' },
-    { value: 'MOV-2023-004', label: 'Tiger 3' },
-    { value: 'MOV-2023-005', label: 'Animal' },
-  ];
+  const movieOptions = moviesFromStore.map((m) => ({
+    value: m.movie_id || m._id,
+    label: m.title,
+  }));
 
-  const exhibitorOptions = [
-    { value: 'EXH-001', label: 'PVR Cinemas - Mumbai' },
-    { value: 'EXH-002', label: 'INOX Megaplex - Delhi' },
-    { value: 'EXH-003', label: 'Cinepolis - Bangalore' },
-    { value: 'EXH-004', label: 'Carnival Cinemas - Pune' },
-    { value: 'EXH-005', label: 'Miraj Cinemas - Hyderabad' },
-  ];
+  const exhibitorOptions = exhibitorsFromStore.map((e) => ({
+    value: e._id,
+    label: e.name || e.exhibitorName,
+  }));
 
   const dateRangeOptions = [
     { value: 'thisWeek', label: 'This Week' },
@@ -43,67 +44,81 @@ const BatchProcessingPanel = ({ onBatchGenerate }) => {
     { value: 'summary', label: 'Summary Format' },
   ];
 
-  const handleStartBatch = () => {
-    if (batchConfig?.movieIds?.length === 0 || batchConfig?.exhibitorIds?.length === 0) {
-      return;
+  const getDateRange = (range) => {
+    const now = new Date();
+    let start, end;
+    switch (range) {
+      case 'thisWeek': {
+        const day = now.getDay();
+        start = new Date(now); start.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+        end = new Date(start); end.setDate(start.getDate() + 6);
+        break;
+      }
+      case 'lastWeek': {
+        const day = now.getDay();
+        end = new Date(now); end.setDate(now.getDate() - (day === 0 ? 7 : day));
+        start = new Date(end); start.setDate(end.getDate() - 6);
+        break;
+      }
+      case 'lastMonth': {
+        start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        end = new Date(now.getFullYear(), now.getMonth(), 0);
+        break;
+      }
+      case 'thisMonth':
+      default: {
+        start = new Date(now.getFullYear(), now.getMonth(), 1);
+        end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      }
     }
+    return {
+      start_date: start.toISOString().split('T')[0],
+      end_date: end.toISOString().split('T')[0],
+    };
+  };
 
-    const queue = [];
-    batchConfig?.movieIds?.forEach((movieId) => {
-      batchConfig?.exhibitorIds?.forEach((exhibitorId) => {
-        queue?.push({
-          id: `${movieId}-${exhibitorId}`,
-          movieId,
-          exhibitorId,
-          status: 'pending',
-          progress: 0,
-        });
-      });
-    });
+  const handleStartBatch = async () => {
+    if (!batchConfig.movieIds.length || !batchConfig.exhibitorIds.length) return;
+
+    const queue = batchConfig.movieIds.flatMap((movieId) =>
+      batchConfig.exhibitorIds.map((exhibitorId) => ({
+        id: `${movieId}-${exhibitorId}`,
+        movieId,
+        exhibitorId,
+        status: 'pending',
+        progress: 0,
+        error: null,
+      }))
+    );
 
     setProcessingQueue(queue);
     setIsProcessing(true);
-    simulateBatchProcessing(queue);
-  };
 
-  const simulateBatchProcessing = (queue) => {
-    let currentIndex = 0;
+    const dateRange = getDateRange(batchConfig.dateRange);
 
-    const processNext = () => {
-      if (currentIndex >= queue?.length) {
-        setIsProcessing(false);
-        return;
-      }
-
+    for (let i = 0; i < queue.length; i++) {
+      const item = queue[i];
       setProcessingQueue((prev) =>
-        prev?.map((item, idx) =>
-          idx === currentIndex ? { ...item, status: 'processing', progress: 0 } : item
-        )
+        prev.map((q, idx) => idx === i ? { ...q, status: 'processing', progress: 50 } : q)
       );
-
-      let progress = 0;
-      const progressInterval = setInterval(() => {
-        progress += 10;
+      try {
+        await generateStatement({
+          movie_id: item.movieId,
+          exhibitor_id: item.exhibitorId,
+          ...dateRange,
+          template: batchConfig.templateFormat,
+        });
         setProcessingQueue((prev) =>
-          prev?.map((item, idx) =>
-            idx === currentIndex ? { ...item, progress } : item
-          )
+          prev.map((q, idx) => idx === i ? { ...q, status: 'completed', progress: 100 } : q)
         );
-
-        if (progress >= 100) {
-          clearInterval(progressInterval);
-          setProcessingQueue((prev) =>
-            prev?.map((item, idx) =>
-              idx === currentIndex ? { ...item, status: 'completed', progress: 100 } : item
-            )
-          );
-          currentIndex++;
-          setTimeout(processNext, 500);
-        }
-      }, 200);
-    };
-
-    processNext();
+        if (onBatchGenerate) onBatchGenerate(item);
+      } catch (err) {
+        setProcessingQueue((prev) =>
+          prev.map((q, idx) => idx === i ? { ...q, status: 'failed', progress: 0, error: err.message } : q)
+        );
+      }
+    }
+    setIsProcessing(false);
   };
 
   const getStatusIcon = (status) => {

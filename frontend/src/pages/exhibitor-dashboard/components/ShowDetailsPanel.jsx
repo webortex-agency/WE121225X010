@@ -154,7 +154,7 @@ const ShowDetailsPanel = ({ isOpen, onClose, showDetails }) => {
               {/* Seating Information */}
               <div className="space-y-4">
                 <h3 className="font-medium text-foreground flex items-center gap-2">
-                  <Icon name="Users" size={16} className="text-teal-600" />
+                  <Icon name="Users" size={16} className="text-primary" />
                   Seating Information
                 </h3>
 
@@ -225,7 +225,7 @@ const ShowDetailsPanel = ({ isOpen, onClose, showDetails }) => {
               {/* Pricing Information */}
               <div className="space-y-4">
                 <h3 className="font-medium text-foreground flex items-center gap-2">
-                  <Icon name="IndianRupee" size={16} className="text-teal-600" />
+                  <Icon name="IndianRupee" size={16} className="text-primary" />
                   Pricing Information
                 </h3>
 
@@ -251,9 +251,9 @@ const ShowDetailsPanel = ({ isOpen, onClose, showDetails }) => {
 
               {/* Collection Summary */}
               {calculations.grossCollection > 0 && (
-                <div className="bg-gradient-to-r from-teal-50 to-blue-50 border border-teal-200 rounded-lg p-4">
+                <div className="bg-gradient-to-r from-primary/5 to-blue-50 border border-primary/20 rounded-lg p-4">
                   <h3 className="font-medium text-foreground mb-3 flex items-center gap-2">
-                    <Icon name="Calculator" size={16} className="text-teal-600" />
+                    <Icon name="Calculator" size={16} className="text-primary" />
                     Collection Summary
                   </h3>
                   
@@ -270,9 +270,9 @@ const ShowDetailsPanel = ({ isOpen, onClose, showDetails }) => {
                         -₹{calculations.acCharge.toLocaleString()}
                       </span>
                     </div>
-                    <div className="border-t border-teal-200 pt-2 flex justify-between">
+                    <div className="border-t border-primary/20 pt-2 flex justify-between">
                       <span className="font-medium text-foreground">Net Collection:</span>
-                      <span className="font-semibold text-teal-600 text-base">
+                      <span className="font-semibold text-primary text-base">
                         ₹{calculations.netCollection.toLocaleString()}
                       </span>
                     </div>
@@ -283,7 +283,7 @@ const ShowDetailsPanel = ({ isOpen, onClose, showDetails }) => {
               {/* Notes */}
               {/* <div className="space-y-4">
                 <h3 className="font-medium text-foreground flex items-center gap-2">
-                  <Icon name="FileText" size={16} className="text-teal-600" />
+                  <Icon name="FileText" size={16} className="text-primary" />
                   Additional Notes
                 </h3>
 
@@ -291,7 +291,7 @@ const ShowDetailsPanel = ({ isOpen, onClose, showDetails }) => {
                   <textarea
                     rows={3}
                     placeholder="Add any additional notes about this show..."
-                    className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                    className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
                     {...register('notes')}
                   />
                 </div>
@@ -310,7 +310,7 @@ const ShowDetailsPanel = ({ isOpen, onClose, showDetails }) => {
                 <Button
                   type="submit"
                   disabled={isCalculating || !totalSeats || !occupiedSeats || !ticketPrice}
-                  className="flex-1 bg-teal-600 hover:bg-teal-700"
+                  className="flex-1 bg-primary hover:bg-primary/80"
                 >
                   {isCalculating ? (
                     <>

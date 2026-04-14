@@ -10,14 +10,14 @@ import Icon from '../../../components/AppIcon';
 import ExhibitorCard from '../components/ExhibitorCard';
 import ExhibitorFormModal from '../components/ExhibitorFormModal';
 import ConfirmDeleteDialog from '../components/ConfirmDeleteDialog';
-import { 
-  selectFilteredExhibitors, 
-  selectExhibitorsLoading, 
+import {
+  selectFilteredExhibitors,
+  selectExhibitorsLoading,
   selectExhibitorsFilter,
   setFilter,
-  deleteExhibitor
+  deleteExhibitorThunk,
+  fetchExhibitors
 } from '../../../store/exhibitorsSlice';
-import { autoInitialize } from '../../../utils/initializeMockData';
 
 const ExhibitorsManagement = () => {
   const navigate = useNavigate();
@@ -32,10 +32,10 @@ const ExhibitorsManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9; // 3x3 grid
 
-  // Initialize mock data
+  // Load exhibitors from backend on mount
   useEffect(() => {
-    autoInitialize();
-  }, []);
+    dispatch(fetchExhibitors());
+  }, [dispatch]);
 
   // Calculate pagination
   const totalPages = Math.ceil(exhibitors.length / itemsPerPage);
@@ -73,9 +73,9 @@ const ExhibitorsManagement = () => {
     setDeletingExhibitor(exhibitor);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (deletingExhibitor) {
-      dispatch(deleteExhibitor(deletingExhibitor.id));
+      await dispatch(deleteExhibitorThunk(deletingExhibitor._id || deletingExhibitor.id));
       setDeletingExhibitor(null);
     }
   };
@@ -151,7 +151,7 @@ const ExhibitorsManagement = () => {
                 onClick={handleAddExhibitor}
                 iconName="Plus"
                 iconPosition="left"
-                className="bg-teal-600 hover:bg-teal-700"
+                className="bg-primary hover:bg-primary/80"
               >
                 Add New Exhibitor
               </Button>
@@ -170,7 +170,7 @@ const ExhibitorsManagement = () => {
                     onClick={() => handleStatusFilter(option.value)}
                     className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                       filter.status === option.value
-                        ? 'bg-teal-600 text-white'
+                        ? 'bg-primary text-white'
                         : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     }`}
                   >
@@ -183,7 +183,8 @@ const ExhibitorsManagement = () => {
                 {/* Sort Dropdown */}
                 <select
                   className="px-3 py-2 text-sm border border-border rounded-md bg-background text-foreground"
-                  defaultValue="recent"
+                  value={filter.sort || 'recent'}
+                  onChange={(e) => handleFilterChange({ sort: e.target.value })}
                 >
                   {sortOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -261,7 +262,7 @@ const ExhibitorsManagement = () => {
                       onClick={() => setCurrentPage(page)}
                       className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
                         currentPage === page
-                          ? 'bg-teal-600 text-white'
+                          ? 'bg-primary text-white'
                           : 'text-muted-foreground hover:bg-muted'
                       }`}
                     >

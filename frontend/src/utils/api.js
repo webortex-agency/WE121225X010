@@ -151,6 +151,9 @@ export const getExhibitors = (params = {}) => {
   const qs = new URLSearchParams(params).toString();
   return request('GET', `/exhibitors${qs ? `?${qs}` : ''}`);
 };
+export const createExhibitor = (data) => request('POST', '/exhibitors', data);
+export const updateExhibitor = (id, data) => request('PUT', `/exhibitors/${id}`, data);
+export const deleteExhibitor = (id) => request('DELETE', `/exhibitors/${id}`);
 
 // ── Assignments ──────────────────────────────────────────────────────────────
 
@@ -164,7 +167,31 @@ export const removeAssignment = (assignment_id) =>
 
 export const getMovies = () => request('GET', '/movies');
 
+export const createMovie = (data) => request('POST', '/movies', data);
+
+export const uploadPoster = async (movie_id, file) => {
+  const token = getToken();
+  const formData = new FormData();
+  formData.append('poster', file);
+  const res = await fetch(`${BASE_URL}/upload/movie/${movie_id}/poster`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(err.message || 'Upload failed');
+  }
+  return res.json();
+};
+
+export const deletePoster = (movie_id) => request('DELETE', `/upload/movie/${movie_id}/poster`);
+
 export const updateMovie = (id, data) => request('PUT', `/movies/${id}`, data);
+
+export const deleteMovie = (id) => request('DELETE', `/movies/${id}`);
+
+export const updateMe = (data) => request('PUT', '/users/me', data);
 
 export const getAssignmentsByMovie = (movie_id) =>
   request('GET', `/assignments/movie/${movie_id}`);

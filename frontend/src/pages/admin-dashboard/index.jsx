@@ -322,7 +322,7 @@ const AdminDashboard = () => {
               change="View Movies"
               changeType="link"
               icon="Film"
-              iconColor="bg-teal-600"
+              iconColor="bg-primary"
               loading={loading}
               onClick={() => navigate('/admin/movies')}
             />
@@ -332,7 +332,7 @@ const AdminDashboard = () => {
               change="View Exhibitors"
               changeType="link"
               icon="Building2"
-              iconColor="bg-teal-600"
+              iconColor="bg-primary"
               loading={loading}
               onClick={() => navigate('/admin/exhibitors')}
             />
@@ -342,7 +342,7 @@ const AdminDashboard = () => {
               change="View Collections"
               changeType="link"
               icon="TrendingUp"
-              iconColor="bg-teal-600"
+              iconColor="bg-primary"
               loading={loading}
               onClick={() => console.log('Navigate to collections')}
             />

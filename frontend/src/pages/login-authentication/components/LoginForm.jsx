@@ -146,20 +146,13 @@ const LoginForm = ({ role, onBack }) => {
         />
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center">
         <Checkbox
           label="Remember me"
           checked={formData.rememberMe}
           onChange={handleCheckboxChange}
           disabled={isLoading}
         />
-        <button
-          type="button"
-          className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-          disabled={isLoading}
-        >
-          Forgot password?
-        </button>
       </div>
       <div className="flex flex-col sm:flex-row gap-2">
         <Button

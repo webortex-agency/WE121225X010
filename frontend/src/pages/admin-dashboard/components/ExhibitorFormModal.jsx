@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { addExhibitor, updateExhibitor } from '../../../store/exhibitorsSlice';
+import { createExhibitorThunk, updateExhibitorThunk } from '../../../store/exhibitorsSlice';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Icon from '../../../components/AppIcon';
+import Modal from '../../../components/shared/Modal';
 
 const ExhibitorFormModal = ({ exhibitor, onClose }) => {
   const dispatch = useDispatch();
@@ -213,17 +214,22 @@ const ExhibitorFormModal = ({ exhibitor, onClose }) => {
 
     try {
       const exhibitorData = {
-        ...formData,
-        activeMovies: exhibitor?.activeMovies || 0,
-        totalCollections: exhibitor?.totalCollections || 0,
-        lastCollectionDate: exhibitor?.lastCollectionDate || null,
-        createdBy: 'admin_001'
+        name: formData.exhibitorName,
+        theater_location: `${formData.cinemaName}, ${formData.location}`,
+        contact: formData.phone,
+        email: formData.email,
+        status: formData.status,
+        bank_details: formData.bankDetails,
+        login_credentials: {
+          email: formData.email,
+          password_hash: formData.password,
+        },
       };
 
       if (isEditing) {
-        dispatch(updateExhibitor({ ...exhibitorData, id: exhibitor.id }));
+        await dispatch(updateExhibitorThunk({ id: exhibitor._id || exhibitor.id, data: exhibitorData })).unwrap();
       } else {
-        dispatch(addExhibitor(exhibitorData));
+        await dispatch(createExhibitorThunk(exhibitorData)).unwrap();
       }
 
       onClose();
@@ -235,21 +241,7 @@ const ExhibitorFormModal = ({ exhibitor, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-      <div className="bg-card border border-border rounded-lg shadow-lg w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-xl font-semibold text-foreground">
-            {isEditing ? 'Edit Exhibitor' : 'Add New Exhibitor'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-muted rounded-md transition-colors"
-          >
-            <Icon name="X" size={20} />
-          </button>
-        </div>
-
+    <Modal isOpen onClose={onClose} title={isEditing ? 'Edit Exhibitor' : 'Add New Exhibitor'} size="lg">
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Exhibitor Information */}
@@ -515,17 +507,16 @@ const ExhibitorFormModal = ({ exhibitor, onClose }) => {
               loading={isSubmitting}
               iconName={isEditing ? "Save" : "Plus"}
               iconPosition="left"
-              className="flex-1 bg-teal-600 hover:bg-teal-700"
+              className="flex-1"
             >
-              {isSubmitting 
-                ? (isEditing ? 'Updating...' : 'Creating...') 
+              {isSubmitting
+                ? (isEditing ? 'Updating...' : 'Creating...')
                 : (isEditing ? 'Update Exhibitor' : 'Create Exhibitor')
               }
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 };
 
