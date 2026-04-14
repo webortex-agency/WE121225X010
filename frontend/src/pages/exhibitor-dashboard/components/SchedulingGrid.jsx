@@ -1,8 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   selectSelectedWeek,
-  selectScheduleForWeek,
+  makeSelectScheduleForWeek,
   selectShowsPerDay,
   selectExtraShowsByDate,
   addMovieToShow,
@@ -19,7 +19,9 @@ import Button from '../../../components/ui/Button';
 const SchedulingGrid = ({ onShowClick }) => {
   const dispatch = useDispatch();
   const selectedWeek = useSelector(selectSelectedWeek);
-  const weekSchedule = useSelector(state => selectScheduleForWeek(state, selectedWeek));
+  // Factory pattern gives this component its own memoisation cache
+  const selectWeekSchedule = useMemo(makeSelectScheduleForWeek, []);
+  const weekSchedule = useSelector(state => selectWeekSchedule(state, selectedWeek));
   const showsPerDay = useSelector(selectShowsPerDay);
   const extraShowsByDate = useSelector(selectExtraShowsByDate);
   const [dragOverCell, setDragOverCell] = useState(null);

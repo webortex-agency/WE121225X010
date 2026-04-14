@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createSelector } from '@reduxjs/toolkit';
 
 const initialState = {
   schedule: {}, // Date as key (YYYY-MM-DD), shows as nested object
@@ -287,21 +287,55 @@ export const {
   setError
 } = exhibitorScheduleSlice.actions;
 
-// Selectors
-export const selectScheduleForDate = (state, date) => 
+// ── Selectors ────────────────────────────────────────────────────────────────
+
+const _selectRawSchedule = (state) => state.exhibitorSchedule.schedule;
+
+export const selectScheduleForDate = (state, date) =>
   state.exhibitorSchedule.schedule[date] || {};
 
+/**
+ * Factory — call once per component instance (e.g. via useMemo) so each
+ * consumer gets its own memoization cache.  This avoids the
+ * "returned a different result with same parameters" Redux warning.
+ *
+ *   const selectWeekSchedule = useMemo(makeSelectScheduleForWeek, []);
+ *   const weekSchedule = useSelector(s => selectWeekSchedule(s, selectedWeek));
+ */
+export const makeSelectScheduleForWeek = () =>
+  createSelector(
+    _selectRawSchedule,
+    (_state, weekData) => weekData?.startDate,
+    (_state, weekData) => weekData?.endDate,
+    (schedule, startDate, endDate) => {
+      if (!startDate || !endDate) return {};
+      const weekSchedule = {};
+      for (
+        let d = new Date(startDate);
+        d <= new Date(endDate);
+        d.setDate(d.getDate() + 1)
+      ) {
+        const dateKey = d.toISOString().split('T')[0];
+        weekSchedule[dateKey] = schedule[dateKey] || {};
+      }
+      return weekSchedule;
+    }
+  );
+
+/** Convenience non-factory version — use only when weekData is stable */
 export const selectScheduleForWeek = (state, weekData) => {
-  const { startDate, endDate } = weekData;
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+  const { startDate, endDate } = weekData || {};
+  if (!startDate || !endDate) return {};
+  const schedule = _selectRawSchedule(state);
   const weekSchedule = {};
-  
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+  for (
+    let d = new Date(startDate);
+    d <= new Date(endDate);
+    d.setDate(d.getDate() + 1)
+  ) {
     const dateKey = d.toISOString().split('T')[0];
-    weekSchedule[dateKey] = state.exhibitorSchedule.schedule[dateKey] || {};
+    weekSchedule[dateKey] = schedule[dateKey] || {};
   }
-  
   return weekSchedule;
 };
 

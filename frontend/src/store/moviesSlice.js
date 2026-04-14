@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import * as api from '../utils/api';
 
 // ── Async Thunks ─────────────────────────────────────────────────────────────
@@ -126,8 +126,11 @@ export const deleteMovie = deleteMovieThunk;
 
 // Selectors
 export const selectAllMovies = (state) => state.movies.movies;
-export const selectActiveMovies = (state) =>
-  state.movies.movies.filter(movie => movie.status === 'active');
+const _selectMoviesArray = (state) => state.movies.movies;
+export const selectActiveMovies = createSelector(
+  _selectMoviesArray,
+  (movies) => movies.filter(movie => movie.status === 'active')
+);
 export const selectMovieById = (state, movieId) =>
   state.movies.movies.find(movie => movie._id === movieId || movie.id === movieId);
 export const selectFilteredMovies = (state) => {

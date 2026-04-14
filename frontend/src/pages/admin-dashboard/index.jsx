@@ -15,8 +15,6 @@ import RecentCollectionsTable from './components/RecentCollectionsTable';
 import NavigationTile from './components/NavigationTile';
 import SystemAlerts from './components/SystemAlerts';
 import QuickStats from './components/QuickStats';
-import MovieManagement from './components/MovieManagement';
-import ExhibitorManagement from './components/ExhibitorManagement';
 import GlobalSearch from './components/GlobalSearch';
 import CollectionDataManagement from './components/CollectionDataManagement';
 import Icon from '../../components/AppIcon';

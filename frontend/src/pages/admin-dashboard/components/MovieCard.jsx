@@ -28,6 +28,13 @@ const MovieCard = ({ movie, onEdit, onViewCollections }) => {
     }
   };
 
+  // Backend may return `genre` (string) or `genres` (array) — normalise to array
+  const genres = Array.isArray(movie.genres)
+    ? movie.genres
+    : movie.genre
+    ? [movie.genre]
+    : [];
+
   return (
     <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
       {/* Movie Poster */}
@@ -71,7 +78,7 @@ const MovieCard = ({ movie, onEdit, onViewCollections }) => {
 
         {/* Genres */}
         <div className="flex flex-wrap gap-1 mb-3">
-          {movie.genres.slice(0, 3).map((genre) => (
+          {genres.slice(0, 3).map((genre) => (
             <span
               key={genre}
               className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded"
@@ -79,9 +86,9 @@ const MovieCard = ({ movie, onEdit, onViewCollections }) => {
               {genre}
             </span>
           ))}
-          {movie.genres.length > 3 && (
+          {genres.length > 3 && (
             <span className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded">
-              +{movie.genres.length - 3} more
+              +{genres.length - 3} more
             </span>
           )}
         </div>

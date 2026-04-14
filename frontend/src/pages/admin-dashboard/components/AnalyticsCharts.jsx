@@ -82,14 +82,17 @@ const TopExhibitorsChart = ({ data }) => {
 
 const StatusPieChart = ({ data }) => {
   if (!data?.length) return <Empty message="No status distribution data." />;
+  // Filter out zero-count items — Recharts generates invalid SVG arcs for 0-value slices
+  const validData = data.filter(d => d.count > 0);
+  if (!validData.length) return <Empty message="No collections recorded yet." />;
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-foreground">Collection Status Distribution</h3>
       <div className="flex flex-col lg:flex-row items-center gap-8">
         <ResponsiveContainer width={280} height={280}>
           <PieChart>
-            <Pie data={data} dataKey="count" nameKey="status" cx="50%" cy="50%" outerRadius={100} label={({ percentage }) => `${percentage}%`}>
-              {data.map((_, i) => (
+            <Pie data={validData} dataKey="count" nameKey="status" cx="50%" cy="50%" outerRadius={100} label={({ percentage }) => `${percentage}%`}>
+              {validData.map((_, i) => (
                 <Cell key={i} fill={COLORS[i % COLORS.length]} />
               ))}
             </Pie>
@@ -98,7 +101,7 @@ const StatusPieChart = ({ data }) => {
           </PieChart>
         </ResponsiveContainer>
         <div className="space-y-3 flex-1">
-          {data.map((item, i) => (
+          {validData.map((item, i) => (
             <div key={i} className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />

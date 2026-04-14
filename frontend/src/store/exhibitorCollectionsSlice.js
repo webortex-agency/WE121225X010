@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createSelector } from '@reduxjs/toolkit';
 
 const initialState = {
   submissions: [],
@@ -104,78 +104,79 @@ export const {
   clearSelectedSubmission
 } = exhibitorCollectionsSlice.actions;
 
-// Selectors
+// ── Base selectors (scalar / direct reference — no memoization needed) ──────
 export const selectAllSubmissions = (state) => state.exhibitorCollections.submissions;
+export const selectSubmissionsFilter = (state) => state.exhibitorCollections.filter;
+export const selectSelectedSubmission = (state) => state.exhibitorCollections.selectedSubmission;
+export const selectCollectionsLoading = (state) => state.exhibitorCollections.loading;
+export const selectCollectionsError = (state) => state.exhibitorCollections.error;
 
-export const selectFilteredSubmissions = (state) => {
-  const { submissions, filter } = state.exhibitorCollections;
-  let filtered = submissions;
+// ── Derived selectors — memoized to avoid new-reference warnings ─────────────
 
-  // Filter by status
-  if (filter.status !== 'all') {
-    filtered = filtered.filter(sub => sub.status === filter.status);
+export const selectFilteredSubmissions = createSelector(
+  selectAllSubmissions,
+  selectSubmissionsFilter,
+  (submissions, filter) => {
+    let filtered = submissions;
+
+    if (filter.status !== 'all') {
+      filtered = filtered.filter(sub => sub.status === filter.status);
+    }
+
+    if (filter.dateRange.startDate && filter.dateRange.endDate) {
+      const startDate = new Date(filter.dateRange.startDate);
+      const endDate = new Date(filter.dateRange.endDate);
+      filtered = filtered.filter(sub => {
+        const subDate = new Date(sub.showDate);
+        return subDate >= startDate && subDate <= endDate;
+      });
+    }
+
+    if (filter.movie !== 'all') {
+      filtered = filtered.filter(sub => sub.movieId === filter.movie);
+    }
+
+    return filtered;
   }
+);
 
-  // Filter by date range
-  if (filter.dateRange.startDate && filter.dateRange.endDate) {
-    const startDate = new Date(filter.dateRange.startDate);
-    const endDate = new Date(filter.dateRange.endDate);
-    filtered = filtered.filter(sub => {
-      const subDate = new Date(sub.showDate);
-      return subDate >= startDate && subDate <= endDate;
-    });
+export const selectPendingSubmissions = createSelector(
+  selectAllSubmissions,
+  (submissions) => submissions.filter(sub => sub.status === 'pending')
+);
+
+export const selectApprovedSubmissions = createSelector(
+  selectAllSubmissions,
+  (submissions) => submissions.filter(sub => sub.status === 'approved')
+);
+
+export const selectRejectedSubmissions = createSelector(
+  selectAllSubmissions,
+  (submissions) => submissions.filter(sub => sub.status === 'rejected')
+);
+
+export const selectTotalCollectionsThisMonth = createSelector(
+  selectAllSubmissions,
+  (submissions) => {
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    return submissions
+      .filter(sub => {
+        const subDate = new Date(sub.submittedAt);
+        return subDate.getMonth() === currentMonth &&
+               subDate.getFullYear() === currentYear &&
+               sub.status === 'approved';
+      })
+      .reduce((total, sub) => total + (sub.netCollection || 0), 0);
   }
-
-  // Filter by movie
-  if (filter.movie !== 'all') {
-    filtered = filtered.filter(sub => sub.movieId === filter.movie);
-  }
-
-  return filtered;
-};
+);
 
 export const selectSubmissionById = (state, submissionId) =>
   state.exhibitorCollections.submissions.find(sub => sub.id === submissionId);
 
-export const selectSelectedSubmission = (state) => 
-  state.exhibitorCollections.selectedSubmission;
-
-export const selectSubmissionsFilter = (state) => 
-  state.exhibitorCollections.filter;
-
-export const selectCollectionsLoading = (state) => 
-  state.exhibitorCollections.loading;
-
-export const selectCollectionsError = (state) => 
-  state.exhibitorCollections.error;
-
-export const selectPendingSubmissions = (state) =>
-  state.exhibitorCollections.submissions.filter(sub => sub.status === 'pending');
-
-export const selectApprovedSubmissions = (state) =>
-  state.exhibitorCollections.submissions.filter(sub => sub.status === 'approved');
-
-export const selectRejectedSubmissions = (state) =>
-  state.exhibitorCollections.submissions.filter(sub => sub.status === 'rejected');
-
-export const selectTotalCollectionsThisMonth = (state) => {
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
-  
-  return state.exhibitorCollections.submissions
-    .filter(sub => {
-      const subDate = new Date(sub.submittedAt);
-      return subDate.getMonth() === currentMonth && 
-             subDate.getFullYear() === currentYear &&
-             sub.status === 'approved';
-    })
-    .reduce((total, sub) => total + (sub.netCollection || 0), 0);
-};
-
 export const selectSubmissionsByDateRange = (state, startDate, endDate) => {
   const start = new Date(startDate);
   const end = new Date(endDate);
-  
   return state.exhibitorCollections.submissions.filter(sub => {
     const subDate = new Date(sub.showDate);
     return subDate >= start && subDate <= end;

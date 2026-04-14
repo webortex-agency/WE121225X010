@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import * as api from '../utils/api';
 
 // ── Async Thunks ─────────────────────────────────────────────────────────────
@@ -126,8 +126,11 @@ export const deleteExhibitor = deleteExhibitorThunk;
 
 // Selectors
 export const selectAllExhibitors = (state) => state.exhibitors.exhibitors;
-export const selectActiveExhibitors = (state) =>
-  state.exhibitors.exhibitors.filter(e => e.status === 'active');
+const _selectExhibitorsArray = (state) => state.exhibitors.exhibitors;
+export const selectActiveExhibitors = createSelector(
+  _selectExhibitorsArray,
+  (exhibitors) => exhibitors.filter(e => e.status === 'active')
+);
 export const selectExhibitorById = (state, exhibitorId) =>
   state.exhibitors.exhibitors.find(e => e._id === exhibitorId || e.id === exhibitorId);
 export const selectFilteredExhibitors = (state) => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   selectFilteredSubmissions,
@@ -9,7 +9,7 @@ import {
   setFilter,
   setSubmissions,
 } from '../../../store/exhibitorCollectionsSlice';
-import { selectScheduleForWeek, selectSelectedWeek } from '../../../store/exhibitorScheduleSlice';
+import { makeSelectScheduleForWeek, selectSelectedWeek } from '../../../store/exhibitorScheduleSlice';
 import RoleBasedNavigation from '../../../components/ui/RoleBasedNavigation';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
@@ -25,7 +25,8 @@ const CollectionsPage = () => {
   const approvedSubmissions = useSelector(selectApprovedSubmissions);
   const rejectedSubmissions = useSelector(selectRejectedSubmissions);
   const selectedWeek = useSelector(selectSelectedWeek);
-  const weekSchedule = useSelector(state => selectScheduleForWeek(state, selectedWeek));
+  const selectWeekSchedule = useMemo(makeSelectScheduleForWeek, []);
+  const weekSchedule = useSelector(state => selectWeekSchedule(state, selectedWeek));
 
   const [selectedShows, setSelectedShows] = useState([]);
   const [showBulkSubmit, setShowBulkSubmit] = useState(false);
